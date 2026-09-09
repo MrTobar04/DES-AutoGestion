@@ -12,8 +12,8 @@
 ```mermaid
 graph TD
     subgraph M1 ["M1: API Gateway (Ocelot)"]
-        S111["SPEC-1.1.1: Enrutamiento Productos y Libros"]
-        S112["SPEC-1.1.2: Enrutamiento Seguridad y Vehículos"]
+        S111["SPEC-1.1.1: Enrutamiento 3 APIs (Productos, Libros, Vehículos)"]
+        S112["SPEC-1.1.2: Enrutamiento Seguridad y Vehículos (3ª API)"]
         S121["SPEC-1.2.1: Rate Limiting (10 req/min)"]
         S131["SPEC-1.3.1: Swagger UI y Verificación Aislada"]
         S131 --> S111
@@ -67,8 +67,8 @@ graph TD
 
 | Código SPEC | Título Descriptivo | Módulo / Área | Dependencias de Entrada | Módulos Dependientes | Componente de Código Principal | Estado |
 | :--- | :--- | :--- | :--- | :--- | :--- | :---: |
-| [`SPEC-1.1.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-1.1.1-ocelot-enrutamiento-productos-libros.md) | Enrutamiento Inverso Productos y Libros | M1: Gateway | SPEC-1.3.1 | SPEC-1.2.1 | `src/ApiGateway/ocelot.json` | **Especificado (100%)** |
-| [`SPEC-1.1.2`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-1.1.2-ocelot-enrutamiento-seguridad-vehiculos.md) | Enrutamiento Vehículos y Propagación JWT | M1: Gateway | SPEC-1.3.1, SPEC-4.1.1 | SPEC-1.2.1 | `src/ApiGateway/ocelot.json` | **Especificado (100%)** |
+| [`SPEC-1.1.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-1.1.1-ocelot-enrutamiento-productos-libros.md) | Enrutamiento 3 APIs (Productos, Libros, Vehículos) | M1: Gateway | SPEC-1.3.1 | SPEC-1.2.1 | `src/ApiGateway/ocelot.json` | **Especificado (100%)** |
+| [`SPEC-1.1.2`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-1.1.2-ocelot-enrutamiento-seguridad-vehiculos.md) | Enrutamiento Vehículos (3ª API) y Propagación JWT | M1: Gateway | SPEC-1.3.1, SPEC-4.1.1 | SPEC-1.2.1 | `src/ApiGateway/ocelot.json` | **Especificado (100%)** |
 | [`SPEC-1.2.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-1.2.1-ocelot-rate-limiting-control-trafico.md) | Rate Limiting Perimetral (10 req/min, 429) | M1: Gateway | SPEC-1.1.1, SPEC-1.1.2 | SPEC-6.1.1, SPEC-6.2.1 | `src/ApiGateway/ocelot.json` | **Especificado (100%)** |
 | [`SPEC-1.3.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-1.3.1-swagger-agregacion-verificacion-aislada.md) | Swagger UI y Verificación Aislada Previa | M1: Gateway | Ninguna | SPEC-1.1.1, SPEC-1.1.2 | `Program.cs` (APIs individuales) | **Especificado (100%)** |
 | [`SPEC-2.1.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-2.1.1-redis-almacenamiento-cache-listado-productos.md) | Almacenamiento Distribuido Redis (TTL 5m) | M2: Caché | Ninguna | SPEC-2.2.1, SPEC-5.2.1 | `ProductosService.cs` / `Redis` | **Especificado (100%)** |
@@ -89,8 +89,8 @@ graph TD
 
 ### Módulo 1: API Gateway (Ocelot - Guía 7)
 * **Submódulo 1.1: Enrutamiento Dinámico:**
-  * [`SPEC-1.1.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-1.1.1-ocelot-enrutamiento-productos-libros.md): Unifica el acceso perimetral hacia los microservicios de `/productos` y `/libros`.
-  * [`SPEC-1.1.2`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-1.1.2-ocelot-enrutamiento-seguridad-vehiculos.md): Conduce las peticiones de autenticación y transfiere cabeceras Bearer hacia `/vehiculos`.
+  * [`SPEC-1.1.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-1.1.1-ocelot-enrutamiento-productos-libros.md): Unifica el acceso perimetral hacia las tres (3) APIs de AutoGestion S.A. (`/productos`, `/libros` y `/vehiculos`).
+  * [`SPEC-1.1.2`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-1.1.2-ocelot-enrutamiento-seguridad-vehiculos.md): Conduce las peticiones de autenticación y transfiere cabeceras Bearer hacia la tercera API (`/vehiculos`), propagando respuestas 401 y 200.
 * **Submódulo 1.2: Gobernanza de Tráfico:**
   * [`SPEC-1.2.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-1.2.1-ocelot-rate-limiting-control-trafico.md): Limita el tráfico a 10 req/minuto, emitiendo HTTP 429 Too Many Requests ante excesos.
 * **Submódulo 1.3: Verificación Previa y Documentación:**
