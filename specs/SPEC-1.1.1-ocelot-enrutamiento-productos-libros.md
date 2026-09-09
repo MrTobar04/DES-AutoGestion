@@ -177,7 +177,7 @@ Centralizar el acceso a los tres (3) microservicios backend independientes de Au
 * Proyecto `src/ApiGateway/ApiGateway.csproj` configurado.
 
 ## 10. Definition of Done (DoD)
-* [ ] Las tres (3) APIs (Productos, Libros y Vehículos) probadas individualmente antes de acoplar.
-* [ ] Archivo `ocelot.json` configurado con rutas completas para las 3 APIs (todos los verbos HTTP).
-* [ ] Enrutamiento a `/productos`, `/libros` y `/vehiculos` verificado al 100%.
-* [ ] Cumplimiento de la rúbrica oficial: todos los endpoints del sistema enrutados correctamente.
+* [x] Las tres (3) APIs (Productos, Libros y Vehículos) probadas individualmente antes de acoplar.
+* [x] Archivo `ocelot.json` configurado con rutas completas para las 3 APIs (todos los verbos HTTP).
+* [x] Enrutamiento a `/productos`, `/libros` y `/vehiculos` verificado al 100%.
+* [x] Cumplimiento de la rúbrica oficial: todos los endpoints del sistema enrutados correctamente.

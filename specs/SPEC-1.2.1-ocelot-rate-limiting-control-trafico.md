@@ -106,7 +106,7 @@ Implementar una política estricta de mitigación de saturación y prevención d
 * Captura de pantalla de evidencia para el informe final PDF mostrando la respuesta HTTP 429 tras la 11ª petición.
 
 ## 10. Definition of Done (DoD)
-* [ ] Rate Limiting activado y probado en todas las rutas clave de Ocelot.
-* [ ] Límite estricto de 10 peticiones/minuto verificado empíricamente.
-* [ ] Petición 11 responde consistentemente con HTTP 429 Too Many Requests.
-* [ ] Evidencia fotográfica generada para el documento PDF de entrega.
+* [x] Rate Limiting activado y probado en todas las rutas clave de Ocelot.
+* [x] Límite estricto de 10 peticiones/minuto verificado empíricamente.
+* [x] Petición 11 responde consistentemente con HTTP 429 Too Many Requests.
+* [x] Evidencia fotográfica generada para el documento PDF de entrega.

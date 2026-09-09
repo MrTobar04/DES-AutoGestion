@@ -1,3 +1,6 @@
 <Solution>
-  <Project Path="AutoGestion/AutoGestion.csproj"/>
+  <Project Path="src/ApiGateway/ApiGateway.csproj" />
+  <Project Path="src/ApiProductos/ApiProductos.csproj" />
+  <Project Path="src/ApiLibros/ApiLibros.csproj" />
+  <Project Path="src/ApiVehiculos/ApiVehiculos.csproj" />
 </Solution>
