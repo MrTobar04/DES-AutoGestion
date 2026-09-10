@@ -107,7 +107,7 @@ app.MapGet("/api/libros", async (IDistributedCache cache) =>
 * Servicios/Endpoints con lógica Cache-Aside implementados en las 3 APIs.
 
 ## 10. Definition of Done (DoD)
-* [ ] Conexión a Redis configurada y operativa en las 3 APIs.
-* [ ] Listados de productos, libros y vehículos guardados en caché con TTL de exactamente 5 minutos.
-* [ ] Verificación con `redis-cli TTL` demostrando el decremento desde 300 segundos para todas las claves.
-* [ ] Fallback resiliente a la fuente de datos implementado en caso de desconexión.
+* [x] Conexión a Redis configurada y operativa en las 3 APIs.
+* [x] Listados de productos, libros y vehículos guardados en caché con TTL de exactamente 5 minutos.
+* [x] Verificación con `redis-cli TTL` demostrando el decremento desde 300 segundos para todas las claves.
+* [x] Fallback resiliente a la fuente de datos implementado en caso de desconexión.

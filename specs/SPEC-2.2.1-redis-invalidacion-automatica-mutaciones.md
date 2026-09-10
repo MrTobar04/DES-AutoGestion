@@ -77,7 +77,7 @@ app.MapPost("/api/libros", async (Libro nuevoLibro, IDistributedCache cache) =>
 * Endpoints `POST`, `PUT` y `DELETE` en `ApiProductos`, `ApiLibros` y `ApiVehiculos` con llamadas explícitas a `_cache.RemoveAsync(...)`.
 
 ## 10. Definition of Done (DoD)
-* [ ] Invalidación probada y funcionando en `POST`, `PUT` y `DELETE` para `ApiProductos`.
-* [ ] Invalidación probada y funcionando en `POST`, `PUT` y `DELETE` para `ApiLibros`.
-* [ ] Invalidación probada y funcionando en `POST`, `PUT` y `DELETE` para `ApiVehiculos`.
-* [ ] Cero discrepancias o datos obsoletos observados en las 3 APIs.
+* [x] Invalidación probada y funcionando en `POST`, `PUT` y `DELETE` para `ApiProductos`.
+* [x] Invalidación probada y funcionando en `POST`, `PUT` y `DELETE` para `ApiLibros`.
+* [x] Invalidación probada y funcionando en `POST`, `PUT` y `DELETE` para `ApiVehiculos`.
+* [x] Cero discrepancias o datos obsoletos observados en las 3 APIs.
