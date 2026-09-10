@@ -85,6 +85,6 @@ public abstract class BaseTestFixture : IDisposable
 * Clase utilitaria `tests/AutoGestion.Tests/Helpers/DbContextTestFactory.cs`.
 
 ## 10. Definition of Done (DoD)
-* [ ] Proyecto de pruebas compilando con xUnit y EF Core InMemory.
-* [ ] Factoría generadora de instancias de base de datos independientes implementada.
-* [ ] Ejecución de `dotnet test` exitosa en menos de 3 segundos.
+* [x] Proyecto de pruebas compilando con xUnit y EF Core InMemory.
+* [x] Factoría generadora de instancias de base de datos independientes implementada.
+* [x] Ejecución de `dotnet test` exitosa en menos de 3 segundos.

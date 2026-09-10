@@ -130,7 +130,7 @@ public class PersonasCrudTests : BaseTestFixture
 * Captura de pantalla de la terminal con las 5 pruebas pasando para el informe técnico en PDF.
 
 ## 10. Definition of Done (DoD)
-* [ ] Caso de prueba de guardado exitoso pasando al 100%.
-* [ ] Caso de prueba de ID inexistente pasando al 100%.
-* [ ] Total de pruebas unitarias en la solución $\ge 5$ pruebas passing.
-* [ ] Cero fallos (`Failed: 0`) en la suite de pruebas automatizadas.
+* [x] Caso de prueba de guardado exitoso pasando al 100%.
+* [x] Caso de prueba de ID inexistente pasando al 100%.
+* [x] Total de pruebas unitarias en la solución $\ge 5$ pruebas passing.
+* [x] Cero fallos (`Failed: 0`) en la suite de pruebas automatizadas.
