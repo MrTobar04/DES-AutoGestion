@@ -3,4 +3,5 @@
   <Project Path="src/ApiProductos/ApiProductos.csproj" />
   <Project Path="src/ApiLibros/ApiLibros.csproj" />
   <Project Path="src/ApiVehiculos/ApiVehiculos.csproj" />
+  <Project Path="tests/AutoGestion.Tests/AutoGestion.Tests.csproj" />
 </Solution>

@@ -118,6 +118,6 @@ public class PersonasValidationTests : BaseTestFixture
 * Suite de pruebas `tests/AutoGestion.Tests/UnitTests/PersonasValidationTests.cs`.
 
 ## 10. Definition of Done (DoD)
-* [ ] Validación de expresión regular `^\d{8}-\d$` probada con múltiples casos de borde.
-* [ ] Validación de campo Nombre obligatorio probada con nulos y espacios en blanco.
-* [ ] Respuestas HTTP 400 (BadRequest) verificadas en todas las pruebas de validación.
+* [x] Validación de expresión regular `^\d{8}-\d$` probada con múltiples casos de borde.
+* [x] Validación de campo Nombre obligatorio probada con nulos y espacios en blanco.
+* [x] Respuestas HTTP 400 (BadRequest) verificadas en todas las pruebas de validación.
