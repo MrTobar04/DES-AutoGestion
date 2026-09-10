@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,7 +11,7 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "AutoGestion - API Vehículos",
         Version = "v1",
-        Description = "Microservicio de Flotilla e Inventario de Vehículos para pruebas previas al acoplamiento con Gateway Ocelot"
+        Description = "Microservicio de Flotilla e Inventario de Vehículos con soporte de autenticación (/register y /login) para Ocelot API Gateway"
     });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -156,20 +158,36 @@ app.MapDelete("/api/vehiculos/{id:int}", (int id) =>
 
 app.MapPost("/api/auth/register", (RegisterDto dto) =>
 {
-    if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+    if (string.IsNullOrWhiteSpace(dto.Nombre))
     {
-        return Results.BadRequest(new { mensaje = "El correo electrónico y la contraseña son obligatorios." });
+        return Results.BadRequest(new { mensaje = "El nombre es obligatorio." });
     }
 
-    if (dto.Password.Length < 6)
+    if (string.IsNullOrWhiteSpace(dto.Dui) || !Regex.IsMatch(dto.Dui.Trim(), @"^\d{8}-\d$"))
+    {
+        return Results.BadRequest(new { mensaje = "El formato del DUI debe ser 00000000-0." });
+    }
+
+    if (string.IsNullOrWhiteSpace(dto.Email) || !dto.Email.Contains('@'))
+    {
+        return Results.BadRequest(new { mensaje = "El correo electrónico es obligatorio y debe tener un formato válido." });
+    }
+
+    if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password.Length < 6)
     {
         return Results.BadRequest(new { mensaje = "La contraseña debe tener mínimo 6 caracteres." });
     }
 
-    return Results.Ok(new { mensaje = "Usuario registrado exitosamente", email = dto.Email });
+    return Results.Ok(new
+    {
+        mensaje = "Usuario registrado exitosamente",
+        nombre = dto.Nombre.Trim(),
+        dui = dto.Dui.Trim(),
+        email = dto.Email.Trim()
+    });
 })
 .WithName("RegistroUsuario")
-.WithSummary("Registra un nuevo usuario en el sistema");
+.WithSummary("Registra un nuevo usuario en el sistema con Nombre, DUI, Email y Contraseña");
 
 app.MapPost("/api/auth/login", (LoginDto dto) =>
 {
@@ -178,7 +196,7 @@ app.MapPost("/api/auth/login", (LoginDto dto) =>
         return Results.BadRequest(new { mensaje = "El correo electrónico y la contraseña son obligatorios." });
     }
 
-    // Generar un token Bearer JWT de prueba de 60 min de vigencia (SPEC-4.1.1)
+    // Generar un token Bearer JWT de prueba de 60 min de vigencia (SPEC-1.1.2 / SPEC-4.1.1)
     var tokenMock = $"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZW1haWwiOiJ7ZHRvLkVtYWlsfSIsImlhdCI6MTUxNjIzOTAyMn0.dummy_signature_for_{dto.Email.Replace("@", "_")}";
     var expiration = DateTime.UtcNow.AddMinutes(60);
 
@@ -206,13 +224,29 @@ public class Vehiculo
 
 public class RegisterDto
 {
+    [Required(ErrorMessage = "El nombre es obligatorio")]
+    public string Nombre { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "El DUI es obligatorio")]
+    [RegularExpression(@"^\d{8}-\d$", ErrorMessage = "El formato del DUI debe ser 00000000-0")]
+    public string Dui { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "El correo electrónico es obligatorio")]
+    [EmailAddress(ErrorMessage = "Formato de correo inválido")]
     public string Email { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "La contraseña es obligatoria")]
+    [MinLength(6, ErrorMessage = "La contraseña debe tener mínimo 6 caracteres")]
     public string Password { get; set; } = string.Empty;
 }
 
 public class LoginDto
 {
+    [Required(ErrorMessage = "El correo electrónico es obligatorio")]
+    [EmailAddress(ErrorMessage = "Formato de correo inválido")]
     public string Email { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "La contraseña es obligatoria")]
     public string Password { get; set; } = string.Empty;
 }
 
