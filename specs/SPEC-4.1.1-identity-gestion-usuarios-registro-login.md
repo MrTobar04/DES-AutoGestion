@@ -75,10 +75,10 @@ public class AuthResponseDto
 }
 ```
 * **API Contracts:**
-  * `POST /api/auth/register` (o `/register`):
+  * `POST /api/auth/register` (Ruta canónica downstream en el microservicio; expuesta como `/register` perimetralmente en el Gateway Ocelot según SPEC-1.1.2):
     * Entrada: `RegisterDto` `{ "nombre": "Juan Pérez", "dui": "01234567-8", "email": "usuario@correo.com", "password": "PasswordSeguro123!" }`.
     * Salida: HTTP 200 OK (`"Usuario registrado exitosamente"`) o HTTP 400 BadRequest con lista de errores de validación (e.g. formato de DUI inválido, nombre vacío, contraseña débil).
-  * `POST /api/auth/login` (o `/login`):
+  * `POST /api/auth/login` (Ruta canónica downstream en el microservicio; expuesta como `/login` perimetralmente en el Gateway Ocelot según SPEC-1.1.2):
     * Entrada: `LoginDto` `{ "email": "usuario@correo.com", "password": "PasswordSeguro123!" }`.
     * Salida: HTTP 200 OK con `AuthResponseDto` o HTTP 401 Unauthorized (`"Credenciales inválidas"`).
 * **UI/UX:** En Swagger UI y Postman, los endpoints de autenticación aparecen claramente etiquetados en la sección "Auth / Seguridad", permitiendo al evaluador registrarse y autenticarse con un clic.
@@ -122,7 +122,8 @@ public class AuthResponseDto
 * Migraciones de Entity Framework Core para tablas de Identity en SQL Server.
 
 ## 10. Definition of Done (DoD)
-* [ ] Endpoint `/register` funcional y persistiendo usuarios en base de datos.
-* [ ] Endpoint `/login` funcional y emitiendo tokens JWT válidos.
-* [ ] Rechazo con HTTP 401 probado ante contraseñas incorrectas.
+* [x] Endpoint `/register` funcional y persistiendo usuarios en base de datos.
+* [x] Endpoint `/login` funcional y emitiendo tokens JWT válidos.
+* [x] Rechazo con HTTP 401 probado ante contraseñas incorrectas.
 * [ ] Evidencia fotográfica de login y token para el informe PDF.
+
