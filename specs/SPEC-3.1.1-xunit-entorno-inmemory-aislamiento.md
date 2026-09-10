@@ -5,7 +5,7 @@ Configurar e institucionalizar el entorno de pruebas unitarias automatizadas con
 
 ## 2. Scope
 ### 2.1. Included
-* Creación y configuración del proyecto `AutoGestion.Tests` basado en xUnit (`net8.0`).
+* Creación y configuración del proyecto `AutoGestion.Tests` basado en xUnit (`net10.0`).
 * Instalación y configuración del paquete `Microsoft.EntityFrameworkCore.InMemory`.
 * Creación de factoría de contexto `DbContextTestFactory` con nombres de base de datos únicos por prueba (`Guid.NewGuid().ToString()`) para garantizar aislamiento absoluto.
 * Configuración de inyección de dependencias mockeadas mediante `Moq` si se requieren servicios satélite.

@@ -5,8 +5,8 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5001
+          "Host": "api-productos",
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/productos/{everything}",
@@ -24,8 +24,8 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5001
+          "Host": "api-productos",
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/productos",
@@ -43,8 +43,8 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5002
+          "Host": "api-libros",
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/libros/{everything}",
@@ -62,8 +62,8 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5002
+          "Host": "api-libros",
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/libros",
@@ -81,8 +81,8 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5003
+          "Host": "api-vehiculos",
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/vehiculos/{everything}",
@@ -100,8 +100,8 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5003
+          "Host": "api-vehiculos",
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/vehiculos",
@@ -119,8 +119,8 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5003
+          "Host": "api-vehiculos",
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/register",
@@ -138,8 +138,8 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5003
+          "Host": "api-vehiculos",
+          "Port": 80
         }
       ],
       "UpstreamPathTemplate": "/login",

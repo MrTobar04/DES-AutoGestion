@@ -5,7 +5,7 @@ Diseñar y estandarizar el proceso de empaquetado de las aplicaciones de AutoGes
 
 ## 2. Scope
 ### 2.1. Included
-* Creación de `Dockerfile` estandarizado para las APIs basadas en .NET 8.
+* Creación de `Dockerfile` estandarizado para las APIs basadas en .NET 10.
 * Separación formal de fases: `base`, `build`, `publish` y `final`.
 * Optimización de caché de capas de Docker mediante la copia selectiva inicial de archivos de proyecto (`*.csproj`) y ejecución de `dotnet restore`.
 * Configuración del usuario no root por defecto y puertos de escucha expuestos (`EXPOSE 80` o `EXPOSE 8080`).
@@ -22,18 +22,18 @@ Diseñar y estandarizar el proceso de empaquetado de las aplicaciones de AutoGes
 
 ## 4. Design (Implementation Details)
 * **Architecture:**
-  `Stage 1: SDK Image (mcr.microsoft.com/dotnet/sdk:8.0)` $\to$ Copia `*.csproj` $\to$ `dotnet restore` $\to$ Copia código fuente $\to$ `dotnet publish -c Release -o /app/publish` $\to$
-  `Stage 2: Runtime Image (mcr.microsoft.com/dotnet/aspnet:8.0)` $\to$ Copia solo `/app/publish` $\to$ `ENTRYPOINT ["dotnet", "AutoGestion.Api.dll"]`.
+  `Stage 1: SDK Image (mcr.microsoft.com/dotnet/sdk:10.0)` $\to$ Copia `*.csproj` $\to$ `dotnet restore` $\to$ Copia código fuente $\to$ `dotnet publish -c Release -o /app/publish` $\to$
+  `Stage 2: Runtime Image (mcr.microsoft.com/dotnet/aspnet:10.0)` $\to$ Copia solo `/app/publish` $\to$ `ENTRYPOINT ["dotnet", "AutoGestion.Api.dll"]`.
 * **Data Model (Archivo `Dockerfile` Multi-Stage de Referencia):**
 ```dockerfile
 # Etapa 1: Runtime Base
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
 # Etapa 2: Compilación y Restauración
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copia de definición de proyectos para cachear dependencias
@@ -96,7 +96,7 @@ ENTRYPOINT ["dotnet", "AutoGestion.Api.dll"]
 * Archivo `.dockerignore` en la raíz de la solución.
 
 ## 10. Definition of Done (DoD)
-* [ ] Archivo `Dockerfile` implementado con patrón Multi-Stage Build.
-* [ ] Archivo `.dockerignore` configurado en la raíz.
-* [ ] Imagen compilando limpiamente sin errores.
-* [ ] Contenedor ejecutándose y respondiendo sobre puerto HTTP 80/8080.
+* [x] Archivo `Dockerfile` implementado con patrón Multi-Stage Build.
+* [x] Archivo `.dockerignore` configurado en la raíz.
+* [x] Imagen compilando limpiamente sin errores.
+* [x] Contenedor ejecutándose y respondiendo sobre puerto HTTP 80/8080.

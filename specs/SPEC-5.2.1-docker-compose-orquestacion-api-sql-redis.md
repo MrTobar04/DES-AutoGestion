@@ -7,7 +7,7 @@ Orquestar el despliegue simultáneo, la interconexión en red privada virtual y 
 ### 2.1. Included
 * Creación y configuración del archivo `docker-compose.yml` en la raíz del repositorio.
 * Definición de los 3 servicios contenedorizados requeridos:
-  1. `api-backend`: API en .NET 8 construida a partir de Dockerfile.
+  1. `api-backend`: API en .NET 10 construida a partir de Dockerfile.
   2. `sql-server`: Motor relacional SQL Server (`mcr.microsoft.com/mssql/server:2022-latest`).
   3. `redis-cache`: Motor de caché en memoria (`redis:7-alpine`).
 * Creación de red virtual interna (`bridge`) para resolución de nombres de host (`sql-server`, `redis-cache`).
@@ -149,8 +149,8 @@ volumes:
 * Captura de pantalla de la terminal o Docker Desktop con los 3 contenedores activos y conectados para el informe en PDF.
 
 ## 10. Definition of Done (DoD)
-* [ ] Archivo `docker-compose.yml` probado y funcional con `docker compose up -d`.
-* [ ] Los 3 servicios (API, SQL, Redis) arrancan e interconectan simultáneamente.
-* [ ] Conexión de la API a SQL Server confirmada.
-* [ ] Conexión de la API a Redis confirmada.
-* [ ] Captura de pantalla generada para la evidencia del criterio (e) de la rúbrica.
+* [x] Archivo `docker-compose.yml` probado y funcional con `docker compose up -d`.
+* [x] Los 3 servicios (API, SQL, Redis) arrancan e interconectan simultáneamente.
+* [x] Conexión de la API a SQL Server confirmada.
+* [x] Conexión de la API a Redis confirmada.
+* [x] Captura de pantalla generada para la evidencia del criterio (e) de la rúbrica.

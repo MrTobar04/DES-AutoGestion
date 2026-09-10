@@ -1,0 +1,127 @@
+services:
+  sql-server:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: autogestion-sql
+    restart: always
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=SuperP@ssw0rd2026!
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+    networks:
+      - autogestion-net
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'SuperP@ssw0rd2026!' -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  redis-cache:
+    image: redis:7-alpine
+    container_name: autogestion-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - autogestion-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api-productos:
+    build:
+      context: ./AutoGestion
+      dockerfile: src/ApiProductos/Dockerfile
+    container_name: autogestion-api-productos
+    restart: on-failure
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=80
+      - ConnectionStrings__DefaultConnection=Server=sql-server,1433;Database=AutoGestionDb;User Id=sa;Password=SuperP@ssw0rd2026!;TrustServerCertificate=True;
+      - ConnectionStrings__RedisConnection=redis-cache:6379
+      - REDIS_CONNECTION_STRING=redis-cache:6379
+    ports:
+      - "8080:80"
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+    networks:
+      - autogestion-net
+
+  api-libros:
+    build:
+      context: ./AutoGestion
+      dockerfile: src/ApiLibros/Dockerfile
+    container_name: autogestion-api-libros
+    restart: on-failure
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=80
+      - ConnectionStrings__DefaultConnection=Server=sql-server,1433;Database=AutoGestionDb;User Id=sa;Password=SuperP@ssw0rd2026!;TrustServerCertificate=True;
+      - ConnectionStrings__RedisConnection=redis-cache:6379
+      - REDIS_CONNECTION_STRING=redis-cache:6379
+    ports:
+      - "8081:80"
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+    networks:
+      - autogestion-net
+
+  api-vehiculos:
+    build:
+      context: ./AutoGestion
+      dockerfile: src/ApiVehiculos/Dockerfile
+    container_name: autogestion-api-vehiculos
+    restart: on-failure
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=80
+      - ConnectionStrings__DefaultConnection=Server=sql-server,1433;Database=AutoGestionDb;User Id=sa;Password=SuperP@ssw0rd2026!;TrustServerCertificate=True;
+      - ConnectionStrings__RedisConnection=redis-cache:6379
+      - REDIS_CONNECTION_STRING=redis-cache:6379
+    ports:
+      - "8082:80"
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+    networks:
+      - autogestion-net
+
+  api-gateway:
+    build:
+      context: ./AutoGestion
+      dockerfile: src/ApiGateway/Dockerfile
+    container_name: autogestion-api-gateway
+    restart: on-failure
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=80
+    ports:
+      - "5000:80"
+    depends_on:
+      - api-productos
+      - api-libros
+      - api-vehiculos
+    networks:
+      - autogestion-net
+
+networks:
+  autogestion-net:
+    driver: bridge
+
+volumes:
+  sql_data:
+    driver: local
