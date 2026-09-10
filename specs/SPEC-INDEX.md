@@ -40,6 +40,7 @@ graph TD
         S411["SPEC-4.1.1: Endpoints /register y /login (JWT)"]
         S421["SPEC-4.2.1: Bloqueo [Authorize] en Vehículos (401)"]
         S411 --> S421
+        S411 -.-> S112
     end
 
     subgraph M5 ["M5: Contenerización (Docker)"]
@@ -67,15 +68,15 @@ graph TD
 | Código SPEC | Título Descriptivo | Módulo / Área | Dependencias de Entrada | Módulos Dependientes | Componente de Código Principal | Estado |
 | :--- | :--- | :--- | :--- | :--- | :--- | :---: |
 | [`SPEC-1.1.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-1.1.1-ocelot-enrutamiento-productos-libros.md) | Enrutamiento 3 APIs (Productos, Libros, Vehículos) | M1: Gateway | SPEC-1.3.1 | SPEC-1.2.1 | `src/ApiGateway/ocelot.json` | **Implementado (100%)** |
-| [`SPEC-1.1.2`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-1.1.2-ocelot-enrutamiento-seguridad-vehiculos.md) | Enrutamiento Vehículos (3ª API), Contratos Auth y Propagación JWT | M1: Gateway | SPEC-1.3.1 | SPEC-1.2.1 | `src/ApiGateway/ocelot.json` | **Implementado (100%)** |
+| [`SPEC-1.1.2`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-1.1.2-ocelot-enrutamiento-seguridad-vehiculos.md) | Enrutamiento Vehículos (3ª API) y Propagación JWT | M1: Gateway | SPEC-1.3.1, SPEC-4.1.1 | SPEC-1.2.1 | `src/ApiGateway/ocelot.json` | **Especificado (100%)** |
 | [`SPEC-1.2.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-1.2.1-ocelot-rate-limiting-control-trafico.md) | Rate Limiting Perimetral (10 req/min, 429) | M1: Gateway | SPEC-1.1.1, SPEC-1.1.2 | SPEC-6.1.1, SPEC-6.2.1 | `src/ApiGateway/ocelot.json` | **Implementado (100%)** |
 | [`SPEC-1.3.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-1.3.1-swagger-agregacion-verificacion-aislada.md) | Swagger UI y Verificación Aislada Previa | M1: Gateway | Ninguna | SPEC-1.1.1, SPEC-1.1.2 | `Program.cs` (APIs individuales) | **Implementado (100%)** |
-| [`SPEC-2.1.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-2.1.1-redis-almacenamiento-cache-listado-productos.md) | Almacenamiento Distribuido Redis (TTL 5m) | M2: Caché | Ninguna | SPEC-2.2.1, SPEC-5.2.1 | `ProductosService.cs` / `Redis` | **Especificado (100%)** |
-| [`SPEC-2.2.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-2.2.1-redis-invalidacion-automatica-mutaciones.md) | Invalidación Automática en POST/PUT/DELETE | M2: Caché | SPEC-2.1.1 | SPEC-6.1.1, SPEC-6.2.1 | `ProductosController.cs` | **Especificado (100%)** |
+| [`SPEC-2.1.1`](file:///c:/Users/Inspiron/source/repos/DES-AutoGestion/specs/SPEC-2.1.1-redis-almacenamiento-cache-listado-productos.md) | Almacenamiento Distribuido Redis en Todas las APIs (TTL 5m) | M2: Caché | Ninguna | SPEC-2.2.1, SPEC-5.2.1 | `Program.cs` (APIs) / `Redis` | **Implementado (100%)** |
+| [`SPEC-2.2.1`](file:///c:/Users/Inspiron/source/repos/DES-AutoGestion/specs/SPEC-2.2.1-redis-invalidacion-automatica-mutaciones.md) | Invalidación Automática en POST/PUT/DELETE (Todas las APIs) | M2: Caché | SPEC-2.1.1 | SPEC-6.1.1, SPEC-6.2.1 | `Program.cs` (APIs) | **Implementado (100%)** |
 | [`SPEC-3.1.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-3.1.1-xunit-entorno-inmemory-aislamiento.md) | Harness de Pruebas xUnit y EF InMemory | M3: Pruebas | Ninguna | SPEC-3.2.1, SPEC-3.2.2 | `DbContextTestFactory.cs` | **Especificado (100%)** |
 | [`SPEC-3.2.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-3.2.1-xunit-validaciones-entidad-personas-dui.md) | Validaciones DUI (Regex) y Nombre en xUnit | M3: Pruebas | SPEC-3.1.1 | SPEC-6.1.1, SPEC-6.2.1 | `PersonasValidationTests.cs` | **Especificado (100%)** |
 | [`SPEC-3.2.2`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-3.2.2-xunit-casos-prueba-persistencia-inexistente.md) | Pruebas Persistencia Exitosa e ID Inexistente | M3: Pruebas | SPEC-3.1.1 | SPEC-6.1.1, SPEC-6.2.1 | `PersonasCrudTests.cs` | **Especificado (100%)** |
-| [`SPEC-4.1.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-4.1.1-identity-gestion-usuarios-registro-login.md) | Endpoints /register y /login con JWT | M4: Seguridad | Ninguna | SPEC-4.2.1 | `AuthController.cs` / Identity | **Especificado (100%)** |
+| [`SPEC-4.1.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-4.1.1-identity-gestion-usuarios-registro-login.md) | Endpoints /register y /login con JWT | M4: Seguridad | Ninguna | SPEC-4.2.1, SPEC-1.1.2 | `AuthController.cs` / Identity | **Especificado (100%)** |
 | [`SPEC-4.2.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-4.2.1-identity-autorizacion-filtro-vehiculos.md) | Bloqueo [Authorize] en Vehículos (HTTP 401) | M4: Seguridad | SPEC-4.1.1 | SPEC-6.1.1, SPEC-6.2.1 | `VehiculosController.cs` | **Especificado (100%)** |
 | [`SPEC-5.1.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-5.1.1-dockerfile-optimizacion-multi-stage.md) | Dockerfile Multi-Stage para APIs | M5: Docker | Ninguna | SPEC-5.2.1 | `src/AutoGestion.Api/Dockerfile` | **Especificado (100%)** |
 | [`SPEC-5.2.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-5.2.1-docker-compose-orquestacion-api-sql-redis.md) | Orquestación docker-compose (API+SQL+Redis) | M5: Docker | SPEC-5.1.1, SPEC-2.1.1 | SPEC-6.1.1, SPEC-6.2.1 | `docker-compose.yml` | **Especificado (100%)** |
@@ -97,9 +98,9 @@ graph TD
 
 ### Módulo 2: Caché de Datos (Redis - Guía 8)
 * **Submódulo 2.1: Almacenamiento en Memoria:**
-  * [`SPEC-2.1.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-2.1.1-redis-almacenamiento-cache-listado-productos.md): Cache-Aside en `GET /productos` con TTL de 5 minutos y fallback resiliente a SQL.
+  * [`SPEC-2.1.1`](file:///c:/Users/Inspiron/source/repos/DES-AutoGestion/specs/SPEC-2.1.1-redis-almacenamiento-cache-listado-productos.md): Cache-Aside en `GET` de todas las APIs (`/productos`, `/libros`, `/vehiculos`) con TTL de 5 minutos y fallback resiliente.
 * **Submódulo 2.2: Consistencia e Invalidación:**
-  * [`SPEC-2.2.1`](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-2.2.1-redis-invalidacion-automatica-mutaciones.md): Purga automática de la clave de caché ante mutaciones `POST`, `PUT` y `DELETE`.
+  * [`SPEC-2.2.1`](file:///c:/Users/Inspiron/source/repos/DES-AutoGestion/specs/SPEC-2.2.1-redis-invalidacion-automatica-mutaciones.md): Purga automática de la clave de caché respectiva ante mutaciones `POST`, `PUT` y `DELETE` en todas las APIs.
 
 ### Módulo 3: Pruebas Unitarias (xUnit - Guía 9)
 * **Submódulo 3.1: Entorno y Aislamiento:**

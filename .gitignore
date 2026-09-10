@@ -1,1 +1,25 @@
-.agents/
+# Environment variables & sensitive credentials
+.env
+*.env
+!.env.example
+appsettings*.local.json
+
+# Build results & IDEs
+[Bb]in/
+[Oo]bj/
+.vs/
+.vscode/
+.idea/
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# System & temporary files
+*.log
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
