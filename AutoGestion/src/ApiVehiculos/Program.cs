@@ -1,28 +1,38 @@
+using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ApiVehiculos.Controllers;
+using ApiVehiculos.Data;
+using ApiVehiculos.Models;
 
 LoadEnvFile();
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configuración de Controladores y Swagger
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "AutoGestion - API Vehículos",
+        Title = "AutoGestion - API Vehículos y Autenticación",
         Version = "v1",
-        Description = "Microservicio de Flotilla e Inventario de Vehículos para pruebas previas al acoplamiento con Gateway Ocelot"
+        Description = "Microservicio de Flotilla de Vehículos y Gestión de Identidad (ASP.NET Core Identity + JWT)"
     });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Ingrese 'Bearer' [espacio] y luego su token JWT en el campo."
+        Description = "Ingrese su token JWT (Swagger antepondrá automáticamente 'Bearer ')."
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -36,6 +46,74 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// Configuración de Entity Framework Core con SQL Server y Resiliencia ante Fallos Transitorios
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
+    ?? "Server=(localdb)\\mssqllocaldb;Database=AutoGestionVehiculosDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
+    options.UseSqlServer(connectionString, sqlOptions =>
+    {
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null
+        );
+    });
+});
+
+// Configuración de ASP.NET Core Identity
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    options.Password.RequireDigit = false;
+    options.Password.RequiredLength = 6;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
+    options.User.RequireUniqueEmail = true;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
+
+// Configuración de Autenticación JWT Bearer
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? Environment.GetEnvironmentVariable("JWT_SECRET_KEY")
+    ?? AuthController.DefaultJwtKey;
+
+var jwtIssuer = builder.Configuration["Jwt:Issuer"]
+    ?? Environment.GetEnvironmentVariable("JWT_ISSUER")
+    ?? AuthController.DefaultIssuer;
+
+var jwtAudience = builder.Configuration["Jwt:Audience"]
+    ?? Environment.GetEnvironmentVariable("JWT_AUDIENCE")
+    ?? AuthController.DefaultAudience;
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = jwtIssuer,
+        ValidateAudience = true,
+        ValidAudience = jwtAudience,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+builder.Services.AddAuthorization();
+
+// Configuración de Redis Cache
 var redisConnectionString = Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")
     ?? builder.Configuration.GetConnectionString("RedisConnection")
     ?? "redis-cache:6379";
@@ -47,6 +125,21 @@ builder.Services.AddStackExchangeRedisCache(options =>
 
 var app = builder.Build();
 
+// Aplicar migraciones automáticamente en inicio de la aplicación
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        context.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Aviso: No se pudo ejecutar context.Database.Migrate() automáticamente en el arranque.");
+    }
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -56,18 +149,38 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// Middleware de seguridad Bearer para aislamiento de Vehículos (SPEC-1.3.1 y SPEC-1.1.2)
+// Middleware de seguridad Bearer para aislamiento de Vehículos (SPEC-1.3.1, SPEC-1.1.2, SPEC-4.2.1)
 app.Use(async (context, next) =>
 {
-    // Permitir acceso libre a Swagger
-    if (context.Request.Path.StartsWithSegments("/swagger"))
+    // Permitir acceso libre a Swagger y Endpoints de Autenticación
+    if (context.Request.Path.StartsWithSegments("/swagger") ||
+        context.Request.Path.StartsWithSegments("/api/auth"))
     {
         await next();
         return;
     }
 
-    var authHeader = context.Request.Headers["Authorization"].ToString();
-    if (string.IsNullOrWhiteSpace(authHeader) || !authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+    var authHeader = context.Request.Headers.Authorization.ToString().Trim();
+    if (string.IsNullOrWhiteSpace(authHeader))
+    {
+        authHeader = context.Request.Headers["Authorization"].ToString().Trim();
+    }
+
+    string token = string.Empty;
+    if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+    {
+        token = authHeader["Bearer ".Length..].Trim();
+    }
+    else if (authHeader.StartsWith("Bearer", StringComparison.OrdinalIgnoreCase))
+    {
+        token = authHeader["Bearer".Length..].Trim();
+    }
+    else if (!string.IsNullOrEmpty(authHeader) && authHeader.Split('.').Length == 3)
+    {
+        token = authHeader;
+    }
+
+    if (string.IsNullOrEmpty(token))
     {
         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
         context.Response.ContentType = "application/json";
@@ -75,24 +188,21 @@ app.Use(async (context, next) =>
         return;
     }
 
-    var token = authHeader["Bearer ".Length..].Trim();
-    if (string.IsNullOrEmpty(token))
-    {
-        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        context.Response.ContentType = "application/json";
-        await context.Response.WriteAsJsonAsync(new { mensaje = "Token Bearer inválido o vacío." });
-        return;
-    }
-
     await next();
 });
 
-// In-memory data store for autonomous testing
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Mapeo de Controladores (incluye AuthController para /api/auth/register, /api/auth/login)
+app.MapControllers();
+
+// In-memory data store for autonomous testing and caching
 var vehiculos = new List<Vehiculo>
 {
-    new() { Id = 1, Marca = "Toyota", Modelo = "Corolla LE", Anio = 2022, Placa = "P123-456", Precio = 18500.00m },
-    new() { Id = 2, Marca = "Nissan", Modelo = "Sentra Advance", Anio = 2023, Placa = "P654-321", Precio = 21000.00m },
-    new() { Id = 3, Marca = "Honda", Modelo = "Civic Touring", Anio = 2024, Placa = "P789-012", Precio = 26500.00m }
+    new() { Id = 1, ModeloId = 1, Marca = "Toyota", Modelo = "Corolla LE", Anio = 2022, Placa = "P123-456", Precio = 18500.00m },
+    new() { Id = 2, ModeloId = 2, Marca = "Nissan", Modelo = "Sentra Advance", Anio = 2023, Placa = "P654-321", Precio = 21000.00m },
+    new() { Id = 3, ModeloId = 3, Marca = "Honda", Modelo = "Civic Touring", Anio = 2024, Placa = "P789-012", Precio = 26500.00m }
 };
 
 var nextId = vehiculos.Max(v => v.Id) + 1;
@@ -257,14 +367,4 @@ static void LoadEnvFile()
         }
         current = current.Parent;
     }
-}
-
-public class Vehiculo
-{
-    public int Id { get; set; }
-    public string Marca { get; set; } = string.Empty;
-    public string Modelo { get; set; } = string.Empty;
-    public int Anio { get; set; }
-    public string Placa { get; set; } = string.Empty;
-    public decimal Precio { get; set; }
 }
