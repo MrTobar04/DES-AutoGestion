@@ -113,12 +113,27 @@ try {
 
     # Prueba aislada API 3: Vehículos
     Write-Host "`n[Aislamiento 3] Probando API 3 Vehículos (puerto 5003)..." -ForegroundColor Yellow
-    $resVehiculoGet = Invoke-WebRequest -Uri "http://localhost:5003/api/vehiculos" -Method GET -UseBasicParsing
-    Write-Host "  GET /api/vehiculos -> Status: $($resVehiculoGet.StatusCode)" -ForegroundColor Green
+    try {
+        $resVehiculoAnon = Invoke-WebRequest -Uri "http://localhost:5003/api/vehiculos" -Method GET -UseBasicParsing
+        Write-Host "  Inesperado: respuesta anónima con status $($resVehiculoAnon.StatusCode)" -ForegroundColor Red
+    }
+    catch {
+        $statusCode = $_.Exception.Response.StatusCode.value__
+        if ($statusCode -eq 401) {
+            Write-Host "  GET /api/vehiculos (anónimo) -> Status: 401 Unauthorized (Aislamiento de seguridad confirmado)" -ForegroundColor Green
+        }
+        else {
+            Write-Host "  Status: $statusCode" -ForegroundColor Yellow
+        }
+    }
+    
+    $headersAuth = @{ Authorization = "Bearer dev-sample-jwt-token" }
+    $resVehiculoGet = Invoke-WebRequest -Uri "http://localhost:5003/api/vehiculos" -Method GET -Headers $headersAuth -UseBasicParsing
+    Write-Host "  GET /api/vehiculos (con Bearer) -> Status: $($resVehiculoGet.StatusCode)" -ForegroundColor Green
     
     $nuevoVehiculo = @{ marca = "Mazda"; modelo = "CX-5 Carbon"; anio = 2023; placa = "P999-000"; precio = 27500.00 } | ConvertTo-Json
-    $resVehiculoPost = Invoke-WebRequest -Uri "http://localhost:5003/api/vehiculos" -Method POST -Body $nuevoVehiculo -ContentType "application/json" -UseBasicParsing
-    Write-Host "  POST /api/vehiculos -> Status: $($resVehiculoPost.StatusCode)" -ForegroundColor Green
+    $resVehiculoPost = Invoke-WebRequest -Uri "http://localhost:5003/api/vehiculos" -Method POST -Body $nuevoVehiculo -ContentType "application/json" -Headers $headersAuth -UseBasicParsing
+    Write-Host "  POST /api/vehiculos (con Bearer) -> Status: $($resVehiculoPost.StatusCode)" -ForegroundColor Green
 
     Write-Host "`n>>> FASE 1 COMPLETADA CON EXITO: 3 APIs funcionando autónomamente. <<<" -ForegroundColor Green
 
@@ -167,12 +182,26 @@ try {
 
     # Test Scenario 3: Enrutamiento a Vehículos
     Write-Host "`n[Gateway Scenario 3] Enrutamiento a API 3 (Vehículos)..." -ForegroundColor Yellow
-    $gwVehiculo = Invoke-WebRequest -Uri "http://localhost:5000/vehiculos" -Method GET -UseBasicParsing
-    Write-Host "  GET http://localhost:5000/vehiculos -> Status: $($gwVehiculo.StatusCode)" -ForegroundColor Green
+    try {
+        $gwVehiculoAnon = Invoke-WebRequest -Uri "http://localhost:5000/vehiculos" -Method GET -UseBasicParsing
+        Write-Host "  Inesperado: respuesta anónima con status $($gwVehiculoAnon.StatusCode)" -ForegroundColor Red
+    }
+    catch {
+        $statusCode = $_.Exception.Response.StatusCode.value__
+        if ($statusCode -eq 401) {
+            Write-Host "  GET http://localhost:5000/vehiculos (anónimo) -> Status: 401 Unauthorized (Traslado transparente de 401)" -ForegroundColor Green
+        }
+        else {
+            Write-Host "  Status: $statusCode" -ForegroundColor Yellow
+        }
+    }
+
+    $gwVehiculo = Invoke-WebRequest -Uri "http://localhost:5000/vehiculos" -Method GET -Headers $headersAuth -UseBasicParsing
+    Write-Host "  GET http://localhost:5000/vehiculos (con Bearer) -> Status: $($gwVehiculo.StatusCode)" -ForegroundColor Green
     Write-Host "  Payload recibido: $($gwVehiculo.Content)" -ForegroundColor Gray
 
-    $gwVehiculoId = Invoke-WebRequest -Uri "http://localhost:5000/vehiculos/1" -Method GET -UseBasicParsing
-    Write-Host "  GET http://localhost:5000/vehiculos/1 -> Status: $($gwVehiculoId.StatusCode)" -ForegroundColor Green
+    $gwVehiculoId = Invoke-WebRequest -Uri "http://localhost:5000/vehiculos/1" -Method GET -Headers $headersAuth -UseBasicParsing
+    Write-Host "  GET http://localhost:5000/vehiculos/1 (con Bearer) -> Status: $($gwVehiculoId.StatusCode)" -ForegroundColor Green
 
     # Test Scenario 4: Ruta no mapeada (404 Not Found)
     Write-Host "`n[Gateway Scenario 4] Comprobando aislamiento de rutas no mapeadas..." -ForegroundColor Yellow

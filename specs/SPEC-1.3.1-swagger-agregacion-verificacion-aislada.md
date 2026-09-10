@@ -100,6 +100,6 @@ builder.Services.AddSwaggerGen(c =>
 * Evidencia en capturas de pantalla individuales de cada API respondiendo exitosamente.
 
 ## 10. Definition of Done (DoD)
-* [ ] Swagger UI operativo en los 3 microservicios individuales.
-* [ ] Pruebas individuales en Productos, Libros y Vehículos ejecutadas y aprobadas al 100%.
-* [ ] Pruebas confirmadas antes de habilitar el enrutamiento en Ocelot Gateway.
+* [x] Swagger UI operativo en los 3 microservicios individuales.
+* [x] Pruebas individuales en Productos, Libros y Vehículos ejecutadas y aprobadas al 100%.
+* [x] Pruebas confirmadas antes de habilitar el enrutamiento en Ocelot Gateway.

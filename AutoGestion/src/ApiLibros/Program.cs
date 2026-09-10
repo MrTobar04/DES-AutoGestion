@@ -9,7 +9,26 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "AutoGestion - API Libros",
         Version = "v1",
-        Description = "Microservicio de Catálogo de Libros y Manuales Técnicos para AutoGestion S.A."
+        Description = "Microservicio de Catálogo de Libros y Manuales Técnicos para pruebas previas al acoplamiento con Gateway Ocelot"
+    });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Ingrese 'Bearer' [espacio] y luego su token JWT en el campo."
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            Array.Empty<string>()
+        }
     });
 });
 
