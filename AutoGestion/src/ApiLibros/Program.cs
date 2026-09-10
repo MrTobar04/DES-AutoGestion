@@ -1,4 +1,8 @@
+using System.Text.Json;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.OpenApi.Models;
+
+LoadEnvFile();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +36,15 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+var redisConnectionString = Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")
+    ?? builder.Configuration.GetConnectionString("RedisConnection")
+    ?? "redis-cache:6379";
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = redisConnectionString;
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -53,13 +66,48 @@ var libros = new List<Libro>
 
 var nextId = libros.Max(l => l.Id) + 1;
 var syncLock = new object();
+const string CacheKeyListadoLibros = "listado_libros";
 
-app.MapGet("/api/libros", () =>
+app.MapGet("/api/libros", async (IDistributedCache cache) =>
 {
+    try
+    {
+        var cachedData = await cache.GetStringAsync(CacheKeyListadoLibros);
+        if (!string.IsNullOrEmpty(cachedData))
+        {
+            var cachedLibros = JsonSerializer.Deserialize<List<Libro>>(cachedData);
+            if (cachedLibros is not null)
+            {
+                return Results.Ok(cachedLibros);
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Error al consultar Redis Cache en Libros. Se ejecuta fallback a la fuente de datos.");
+    }
+
+    List<Libro> result;
     lock (syncLock)
     {
-        return Results.Ok(libros.ToList());
+        result = libros.ToList();
     }
+
+    try
+    {
+        var cacheOptions = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+        };
+        var serializedData = JsonSerializer.Serialize(result);
+        await cache.SetStringAsync(CacheKeyListadoLibros, serializedData, cacheOptions);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Error al guardar el catálogo de libros en Redis Cache.");
+    }
+
+    return Results.Ok(result);
 })
 .WithName("ObtenerLibros")
 .WithSummary("Obtiene el catálogo de libros y manuales");
@@ -75,19 +123,29 @@ app.MapGet("/api/libros/{id:int}", (int id) =>
 .WithName("ObtenerLibroPorId")
 .WithSummary("Obtiene un libro por su identificador");
 
-app.MapPost("/api/libros", (Libro nuevoLibro) =>
+app.MapPost("/api/libros", async (Libro nuevoLibro, IDistributedCache cache) =>
 {
     lock (syncLock)
     {
         nuevoLibro.Id = nextId++;
         libros.Add(nuevoLibro);
-        return Results.Created($"/api/libros/{nuevoLibro.Id}", nuevoLibro);
     }
+
+    try
+    {
+        await cache.RemoveAsync(CacheKeyListadoLibros);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Error al invalidar Redis Cache tras POST en Libros.");
+    }
+
+    return Results.Created($"/api/libros/{nuevoLibro.Id}", nuevoLibro);
 })
 .WithName("CrearLibro")
 .WithSummary("Registra un nuevo libro en el catálogo");
 
-app.MapPut("/api/libros/{id:int}", (int id, Libro libroActualizado) =>
+app.MapPut("/api/libros/{id:int}", async (int id, Libro libroActualizado, IDistributedCache cache) =>
 {
     lock (syncLock)
     {
@@ -99,14 +157,25 @@ app.MapPut("/api/libros/{id:int}", (int id, Libro libroActualizado) =>
 
         libroActualizado.Id = id;
         libros[index] = libroActualizado;
-        return Results.Ok(libroActualizado);
     }
+
+    try
+    {
+        await cache.RemoveAsync(CacheKeyListadoLibros);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Error al invalidar Redis Cache tras PUT en Libros.");
+    }
+
+    return Results.Ok(libroActualizado);
 })
 .WithName("ActualizarLibro")
 .WithSummary("Actualiza los datos de un libro existente");
 
-app.MapDelete("/api/libros/{id:int}", (int id) =>
+app.MapDelete("/api/libros/{id:int}", async (int id, IDistributedCache cache) =>
 {
+    Libro? eliminado = null;
     lock (syncLock)
     {
         var index = libros.FindIndex(l => l.Id == id);
@@ -115,15 +184,49 @@ app.MapDelete("/api/libros/{id:int}", (int id) =>
             return Results.NotFound(new { mensaje = $"Libro con Id {id} no encontrado para eliminación" });
         }
 
-        var eliminado = libros[index];
+        eliminado = libros[index];
         libros.RemoveAt(index);
-        return Results.Ok(eliminado);
     }
+
+    try
+    {
+        await cache.RemoveAsync(CacheKeyListadoLibros);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Error al invalidar Redis Cache tras DELETE en Libros.");
+    }
+
+    return Results.Ok(eliminado);
 })
 .WithName("EliminarLibro")
 .WithSummary("Elimina un libro del catálogo");
 
 app.Run();
+
+static void LoadEnvFile()
+{
+    var current = new DirectoryInfo(Directory.GetCurrentDirectory());
+    while (current != null)
+    {
+        var envPath = Path.Combine(current.FullName, ".env");
+        if (File.Exists(envPath))
+        {
+            foreach (var line in File.ReadAllLines(envPath))
+            {
+                var trimmed = line.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith("#")) continue;
+                var parts = trimmed.Split('=', 2);
+                if (parts.Length == 2)
+                {
+                    Environment.SetEnvironmentVariable(parts[0].Trim(), parts[1].Trim());
+                }
+            }
+            break;
+        }
+        current = current.Parent;
+    }
+}
 
 public class Libro
 {

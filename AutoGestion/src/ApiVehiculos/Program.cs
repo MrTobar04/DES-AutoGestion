@@ -1,6 +1,8 @@
-using System.ComponentModel.DataAnnotations;
-using System.Text.RegularExpressions;
+using System.Text.Json;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.OpenApi.Models;
+
+LoadEnvFile();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +13,7 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "AutoGestion - API Vehículos",
         Version = "v1",
-        Description = "Microservicio de Flotilla e Inventario de Vehículos con soporte de autenticación (/register y /login) para Ocelot API Gateway"
+        Description = "Microservicio de Flotilla e Inventario de Vehículos para pruebas previas al acoplamiento con Gateway Ocelot"
     });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -34,6 +36,15 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+var redisConnectionString = Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")
+    ?? builder.Configuration.GetConnectionString("RedisConnection")
+    ?? "redis-cache:6379";
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = redisConnectionString;
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -48,8 +59,8 @@ if (app.Environment.IsDevelopment())
 // Middleware de seguridad Bearer para aislamiento de Vehículos (SPEC-1.3.1 y SPEC-1.1.2)
 app.Use(async (context, next) =>
 {
-    // Permitir acceso libre a Swagger y Endpoints de Autenticación
-    if (context.Request.Path.StartsWithSegments("/swagger") || context.Request.Path.StartsWithSegments("/api/auth"))
+    // Permitir acceso libre a Swagger
+    if (context.Request.Path.StartsWithSegments("/swagger"))
     {
         await next();
         return;
@@ -86,13 +97,48 @@ var vehiculos = new List<Vehiculo>
 
 var nextId = vehiculos.Max(v => v.Id) + 1;
 var syncLock = new object();
+const string CacheKeyListadoVehiculos = "listado_vehiculos";
 
-app.MapGet("/api/vehiculos", () =>
+app.MapGet("/api/vehiculos", async (IDistributedCache cache) =>
 {
+    try
+    {
+        var cachedData = await cache.GetStringAsync(CacheKeyListadoVehiculos);
+        if (!string.IsNullOrEmpty(cachedData))
+        {
+            var cachedVehiculos = JsonSerializer.Deserialize<List<Vehiculo>>(cachedData);
+            if (cachedVehiculos is not null)
+            {
+                return Results.Ok(cachedVehiculos);
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Error al consultar Redis Cache en Vehículos. Se ejecuta fallback a la fuente de datos.");
+    }
+
+    List<Vehiculo> result;
     lock (syncLock)
     {
-        return Results.Ok(vehiculos.ToList());
+        result = vehiculos.ToList();
     }
+
+    try
+    {
+        var cacheOptions = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+        };
+        var serializedData = JsonSerializer.Serialize(result);
+        await cache.SetStringAsync(CacheKeyListadoVehiculos, serializedData, cacheOptions);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Error al guardar el inventario de vehículos en Redis Cache.");
+    }
+
+    return Results.Ok(result);
 })
 .WithName("ObtenerVehiculos")
 .WithSummary("Obtiene el inventario completo de vehículos");
@@ -108,19 +154,29 @@ app.MapGet("/api/vehiculos/{id:int}", (int id) =>
 .WithName("ObtenerVehiculoPorId")
 .WithSummary("Obtiene un vehículo por su identificador");
 
-app.MapPost("/api/vehiculos", (Vehiculo nuevoVehiculo) =>
+app.MapPost("/api/vehiculos", async (Vehiculo nuevoVehiculo, IDistributedCache cache) =>
 {
     lock (syncLock)
     {
         nuevoVehiculo.Id = nextId++;
         vehiculos.Add(nuevoVehiculo);
-        return Results.Created($"/api/vehiculos/{nuevoVehiculo.Id}", nuevoVehiculo);
     }
+
+    try
+    {
+        await cache.RemoveAsync(CacheKeyListadoVehiculos);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Error al invalidar Redis Cache tras POST en Vehículos.");
+    }
+
+    return Results.Created($"/api/vehiculos/{nuevoVehiculo.Id}", nuevoVehiculo);
 })
 .WithName("CrearVehiculo")
 .WithSummary("Registra un nuevo vehículo en el inventario");
 
-app.MapPut("/api/vehiculos/{id:int}", (int id, Vehiculo vehiculoActualizado) =>
+app.MapPut("/api/vehiculos/{id:int}", async (int id, Vehiculo vehiculoActualizado, IDistributedCache cache) =>
 {
     lock (syncLock)
     {
@@ -132,14 +188,25 @@ app.MapPut("/api/vehiculos/{id:int}", (int id, Vehiculo vehiculoActualizado) =>
 
         vehiculoActualizado.Id = id;
         vehiculos[index] = vehiculoActualizado;
-        return Results.Ok(vehiculoActualizado);
     }
+
+    try
+    {
+        await cache.RemoveAsync(CacheKeyListadoVehiculos);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Error al invalidar Redis Cache tras PUT en Vehículos.");
+    }
+
+    return Results.Ok(vehiculoActualizado);
 })
 .WithName("ActualizarVehiculo")
 .WithSummary("Actualiza los datos de un vehículo existente");
 
-app.MapDelete("/api/vehiculos/{id:int}", (int id) =>
+app.MapDelete("/api/vehiculos/{id:int}", async (int id, IDistributedCache cache) =>
 {
+    Vehiculo? eliminado = null;
     lock (syncLock)
     {
         var index = vehiculos.FindIndex(v => v.Id == id);
@@ -148,69 +215,49 @@ app.MapDelete("/api/vehiculos/{id:int}", (int id) =>
             return Results.NotFound(new { mensaje = $"Vehículo con Id {id} no encontrado para eliminación" });
         }
 
-        var eliminado = vehiculos[index];
+        eliminado = vehiculos[index];
         vehiculos.RemoveAt(index);
-        return Results.Ok(eliminado);
     }
+
+    try
+    {
+        await cache.RemoveAsync(CacheKeyListadoVehiculos);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Error al invalidar Redis Cache tras DELETE en Vehículos.");
+    }
+
+    return Results.Ok(eliminado);
 })
 .WithName("EliminarVehiculo")
 .WithSummary("Elimina un vehículo del inventario");
 
-app.MapPost("/api/auth/register", (RegisterDto dto) =>
-{
-    if (string.IsNullOrWhiteSpace(dto.Nombre))
-    {
-        return Results.BadRequest(new { mensaje = "El nombre es obligatorio." });
-    }
-
-    if (string.IsNullOrWhiteSpace(dto.Dui) || !Regex.IsMatch(dto.Dui.Trim(), @"^\d{8}-\d$"))
-    {
-        return Results.BadRequest(new { mensaje = "El formato del DUI debe ser 00000000-0." });
-    }
-
-    if (string.IsNullOrWhiteSpace(dto.Email) || !dto.Email.Contains('@'))
-    {
-        return Results.BadRequest(new { mensaje = "El correo electrónico es obligatorio y debe tener un formato válido." });
-    }
-
-    if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password.Length < 6)
-    {
-        return Results.BadRequest(new { mensaje = "La contraseña debe tener mínimo 6 caracteres." });
-    }
-
-    return Results.Ok(new
-    {
-        mensaje = "Usuario registrado exitosamente",
-        nombre = dto.Nombre.Trim(),
-        dui = dto.Dui.Trim(),
-        email = dto.Email.Trim()
-    });
-})
-.WithName("RegistroUsuario")
-.WithSummary("Registra un nuevo usuario en el sistema con Nombre, DUI, Email y Contraseña");
-
-app.MapPost("/api/auth/login", (LoginDto dto) =>
-{
-    if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
-    {
-        return Results.BadRequest(new { mensaje = "El correo electrónico y la contraseña son obligatorios." });
-    }
-
-    // Generar un token Bearer JWT de prueba de 60 min de vigencia (SPEC-1.1.2 / SPEC-4.1.1)
-    var tokenMock = $"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZW1haWwiOiJ7ZHRvLkVtYWlsfSIsImlhdCI6MTUxNjIzOTAyMn0.dummy_signature_for_{dto.Email.Replace("@", "_")}";
-    var expiration = DateTime.UtcNow.AddMinutes(60);
-
-    return Results.Ok(new AuthResponseDto
-    {
-        Token = tokenMock,
-        Expiration = expiration,
-        Email = dto.Email
-    });
-})
-.WithName("LoginUsuario")
-.WithSummary("Inicia sesión y genera credencial JWT Bearer");
-
 app.Run();
+
+static void LoadEnvFile()
+{
+    var current = new DirectoryInfo(Directory.GetCurrentDirectory());
+    while (current != null)
+    {
+        var envPath = Path.Combine(current.FullName, ".env");
+        if (File.Exists(envPath))
+        {
+            foreach (var line in File.ReadAllLines(envPath))
+            {
+                var trimmed = line.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith("#")) continue;
+                var parts = trimmed.Split('=', 2);
+                if (parts.Length == 2)
+                {
+                    Environment.SetEnvironmentVariable(parts[0].Trim(), parts[1].Trim());
+                }
+            }
+            break;
+        }
+        current = current.Parent;
+    }
+}
 
 public class Vehiculo
 {
@@ -220,39 +267,4 @@ public class Vehiculo
     public int Anio { get; set; }
     public string Placa { get; set; } = string.Empty;
     public decimal Precio { get; set; }
-}
-
-public class RegisterDto
-{
-    [Required(ErrorMessage = "El nombre es obligatorio")]
-    public string Nombre { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "El DUI es obligatorio")]
-    [RegularExpression(@"^\d{8}-\d$", ErrorMessage = "El formato del DUI debe ser 00000000-0")]
-    public string Dui { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "El correo electrónico es obligatorio")]
-    [EmailAddress(ErrorMessage = "Formato de correo inválido")]
-    public string Email { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "La contraseña es obligatoria")]
-    [MinLength(6, ErrorMessage = "La contraseña debe tener mínimo 6 caracteres")]
-    public string Password { get; set; } = string.Empty;
-}
-
-public class LoginDto
-{
-    [Required(ErrorMessage = "El correo electrónico es obligatorio")]
-    [EmailAddress(ErrorMessage = "Formato de correo inválido")]
-    public string Email { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "La contraseña es obligatoria")]
-    public string Password { get; set; } = string.Empty;
-}
-
-public class AuthResponseDto
-{
-    public string Token { get; set; } = string.Empty;
-    public DateTime Expiration { get; set; }
-    public string Email { get; set; } = string.Empty;
 }

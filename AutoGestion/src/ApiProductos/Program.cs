@@ -1,4 +1,8 @@
+using System.Text.Json;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.OpenApi.Models;
+
+LoadEnvFile();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +36,15 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+var redisConnectionString = Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")
+    ?? builder.Configuration.GetConnectionString("RedisConnection")
+    ?? "redis-cache:6379";
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = redisConnectionString;
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -53,13 +66,48 @@ var productos = new List<Producto>
 
 var nextId = productos.Max(p => p.Id) + 1;
 var syncLock = new object();
+const string CacheKeyListadoProductos = "listado_productos";
 
-app.MapGet("/api/productos", () =>
+app.MapGet("/api/productos", async (IDistributedCache cache) =>
 {
+    try
+    {
+        var cachedData = await cache.GetStringAsync(CacheKeyListadoProductos);
+        if (!string.IsNullOrEmpty(cachedData))
+        {
+            var cachedProductos = JsonSerializer.Deserialize<List<Producto>>(cachedData);
+            if (cachedProductos is not null)
+            {
+                return Results.Ok(cachedProductos);
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Error al consultar Redis Cache. Se ejecuta fallback a la fuente de datos.");
+    }
+
+    List<Producto> result;
     lock (syncLock)
     {
-        return Results.Ok(productos.ToList());
+        result = productos.ToList();
     }
+
+    try
+    {
+        var cacheOptions = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+        };
+        var serializedData = JsonSerializer.Serialize(result);
+        await cache.SetStringAsync(CacheKeyListadoProductos, serializedData, cacheOptions);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Error al guardar el listado de productos en Redis Cache.");
+    }
+
+    return Results.Ok(result);
 })
 .WithName("ObtenerProductos")
 .WithSummary("Obtiene el listado completo de productos");
@@ -75,19 +123,29 @@ app.MapGet("/api/productos/{id:int}", (int id) =>
 .WithName("ObtenerProductoPorId")
 .WithSummary("Obtiene un producto por su identificador");
 
-app.MapPost("/api/productos", (Producto nuevoProducto) =>
+app.MapPost("/api/productos", async (Producto nuevoProducto, IDistributedCache cache) =>
 {
     lock (syncLock)
     {
         nuevoProducto.Id = nextId++;
         productos.Add(nuevoProducto);
-        return Results.Created($"/api/productos/{nuevoProducto.Id}", nuevoProducto);
     }
+
+    try
+    {
+        await cache.RemoveAsync(CacheKeyListadoProductos);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Error al invalidar Redis Cache tras POST.");
+    }
+
+    return Results.Created($"/api/productos/{nuevoProducto.Id}", nuevoProducto);
 })
 .WithName("CrearProducto")
 .WithSummary("Registra un nuevo producto en el catálogo");
 
-app.MapPut("/api/productos/{id:int}", (int id, Producto productoActualizado) =>
+app.MapPut("/api/productos/{id:int}", async (int id, Producto productoActualizado, IDistributedCache cache) =>
 {
     lock (syncLock)
     {
@@ -99,14 +157,25 @@ app.MapPut("/api/productos/{id:int}", (int id, Producto productoActualizado) =>
 
         productoActualizado.Id = id;
         productos[index] = productoActualizado;
-        return Results.Ok(productoActualizado);
     }
+
+    try
+    {
+        await cache.RemoveAsync(CacheKeyListadoProductos);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Error al invalidar Redis Cache tras PUT.");
+    }
+
+    return Results.Ok(productoActualizado);
 })
 .WithName("ActualizarProducto")
 .WithSummary("Actualiza los datos de un producto existente");
 
-app.MapDelete("/api/productos/{id:int}", (int id) =>
+app.MapDelete("/api/productos/{id:int}", async (int id, IDistributedCache cache) =>
 {
+    Producto? eliminado = null;
     lock (syncLock)
     {
         var index = productos.FindIndex(p => p.Id == id);
@@ -115,15 +184,49 @@ app.MapDelete("/api/productos/{id:int}", (int id) =>
             return Results.NotFound(new { mensaje = $"Producto con Id {id} no encontrado para eliminación" });
         }
 
-        var eliminado = productos[index];
+        eliminado = productos[index];
         productos.RemoveAt(index);
-        return Results.Ok(eliminado);
     }
+
+    try
+    {
+        await cache.RemoveAsync(CacheKeyListadoProductos);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Error al invalidar Redis Cache tras DELETE.");
+    }
+
+    return Results.Ok(eliminado);
 })
 .WithName("EliminarProducto")
 .WithSummary("Elimina un producto del catálogo");
 
 app.Run();
+
+static void LoadEnvFile()
+{
+    var current = new DirectoryInfo(Directory.GetCurrentDirectory());
+    while (current != null)
+    {
+        var envPath = Path.Combine(current.FullName, ".env");
+        if (File.Exists(envPath))
+        {
+            foreach (var line in File.ReadAllLines(envPath))
+            {
+                var trimmed = line.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith("#")) continue;
+                var parts = trimmed.Split('=', 2);
+                if (parts.Length == 2)
+                {
+                    Environment.SetEnvironmentVariable(parts[0].Trim(), parts[1].Trim());
+                }
+            }
+            break;
+        }
+        current = current.Parent;
+    }
+}
 
 public class Producto
 {
