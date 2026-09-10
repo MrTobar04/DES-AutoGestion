@@ -55,48 +55,76 @@ Configurar en el API Gateway Ocelot el enrutamiento perimetral especializado, la
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "api-seguridad",
-          "Port": 80
+          "Host": "localhost",
+          "Port": 5003
         }
       ],
       "UpstreamPathTemplate": "/register",
-      "UpstreamHttpMethod": [ "Post" ]
+      "UpstreamHttpMethod": [ "Post" ],
+      "RateLimitOptions": {
+        "ClientWhitelist": [],
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "PeriodTimespan": 60,
+        "Limit": 10
+      }
     },
     {
       "DownstreamPathTemplate": "/api/auth/login",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "api-seguridad",
-          "Port": 80
+          "Host": "localhost",
+          "Port": 5003
         }
       ],
       "UpstreamPathTemplate": "/login",
-      "UpstreamHttpMethod": [ "Post" ]
+      "UpstreamHttpMethod": [ "Post" ],
+      "RateLimitOptions": {
+        "ClientWhitelist": [],
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "PeriodTimespan": 60,
+        "Limit": 10
+      }
     },
     {
       "DownstreamPathTemplate": "/api/vehiculos",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "api-vehiculos",
-          "Port": 80
+          "Host": "localhost",
+          "Port": 5003
         }
       ],
       "UpstreamPathTemplate": "/vehiculos",
-      "UpstreamHttpMethod": [ "Get", "Post" ]
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ],
+      "RateLimitOptions": {
+        "ClientWhitelist": [],
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "PeriodTimespan": 60,
+        "Limit": 10
+      }
     },
     {
       "DownstreamPathTemplate": "/api/vehiculos/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "api-vehiculos",
-          "Port": 80
+          "Host": "localhost",
+          "Port": 5003
         }
       ],
       "UpstreamPathTemplate": "/vehiculos/{everything}",
-      "UpstreamHttpMethod": [ "Get", "Put", "Delete" ]
+      "UpstreamHttpMethod": [ "Get", "Put", "Delete" ],
+      "RateLimitOptions": {
+        "ClientWhitelist": [],
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "PeriodTimespan": 60,
+        "Limit": 10
+      }
     }
   ]
 }
@@ -142,7 +170,7 @@ Configurar en el API Gateway Ocelot el enrutamiento perimetral especializado, la
 * Capturas de pantalla para el informe en PDF demostrando el rechazo 401 sin sesión y el éxito 200 con token para la tercera API.
 
 ## 10. Definition of Done (DoD)
-* [ ] La tercera API de Vehículos debidamente enrutada en Ocelot Gateway.
-* [ ] Endpoints `/register` y `/login` accesibles y funcionales a través del Gateway.
-* [ ] Respuestas HTTP 401 Unauthorized verificadas al 100% en llamadas anónimas a la tercera API.
-* [ ] Propagación de tokens Bearer JWT verificada recibiendo HTTP 200 OK con sesión activa.
+* [x] La tercera API de Vehículos debidamente enrutada en Ocelot Gateway.
+* [x] Endpoints `/register` y `/login` accesibles y funcionales a través del Gateway.
+* [x] Respuestas HTTP 401 Unauthorized verificadas al 100% en llamadas anónimas a la tercera API.
+* [x] Propagación de tokens Bearer JWT verificada recibiendo HTTP 200 OK con sesión activa.

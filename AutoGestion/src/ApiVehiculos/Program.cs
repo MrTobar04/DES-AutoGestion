@@ -46,8 +46,8 @@ if (app.Environment.IsDevelopment())
 // Middleware de seguridad Bearer para aislamiento de Vehículos (SPEC-1.3.1 y SPEC-1.1.2)
 app.Use(async (context, next) =>
 {
-    // Permitir acceso libre a Swagger
-    if (context.Request.Path.StartsWithSegments("/swagger"))
+    // Permitir acceso libre a Swagger y Endpoints de Autenticación
+    if (context.Request.Path.StartsWithSegments("/swagger") || context.Request.Path.StartsWithSegments("/api/auth"))
     {
         await next();
         return;
@@ -154,6 +154,44 @@ app.MapDelete("/api/vehiculos/{id:int}", (int id) =>
 .WithName("EliminarVehiculo")
 .WithSummary("Elimina un vehículo del inventario");
 
+app.MapPost("/api/auth/register", (RegisterDto dto) =>
+{
+    if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+    {
+        return Results.BadRequest(new { mensaje = "El correo electrónico y la contraseña son obligatorios." });
+    }
+
+    if (dto.Password.Length < 6)
+    {
+        return Results.BadRequest(new { mensaje = "La contraseña debe tener mínimo 6 caracteres." });
+    }
+
+    return Results.Ok(new { mensaje = "Usuario registrado exitosamente", email = dto.Email });
+})
+.WithName("RegistroUsuario")
+.WithSummary("Registra un nuevo usuario en el sistema");
+
+app.MapPost("/api/auth/login", (LoginDto dto) =>
+{
+    if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+    {
+        return Results.BadRequest(new { mensaje = "El correo electrónico y la contraseña son obligatorios." });
+    }
+
+    // Generar un token Bearer JWT de prueba de 60 min de vigencia (SPEC-4.1.1)
+    var tokenMock = $"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZW1haWwiOiJ7ZHRvLkVtYWlsfSIsImlhdCI6MTUxNjIzOTAyMn0.dummy_signature_for_{dto.Email.Replace("@", "_")}";
+    var expiration = DateTime.UtcNow.AddMinutes(60);
+
+    return Results.Ok(new AuthResponseDto
+    {
+        Token = tokenMock,
+        Expiration = expiration,
+        Email = dto.Email
+    });
+})
+.WithName("LoginUsuario")
+.WithSummary("Inicia sesión y genera credencial JWT Bearer");
+
 app.Run();
 
 public class Vehiculo
@@ -164,4 +202,23 @@ public class Vehiculo
     public int Anio { get; set; }
     public string Placa { get; set; } = string.Empty;
     public decimal Precio { get; set; }
+}
+
+public class RegisterDto
+{
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+}
+
+public class LoginDto
+{
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+}
+
+public class AuthResponseDto
+{
+    public string Token { get; set; } = string.Empty;
+    public DateTime Expiration { get; set; }
+    public string Email { get; set; } = string.Empty;
 }
