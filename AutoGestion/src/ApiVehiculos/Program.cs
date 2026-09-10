@@ -1,9 +1,7 @@
 using System.Text;
-using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ApiVehiculos.Controllers;
@@ -194,154 +192,8 @@ app.Use(async (context, next) =>
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Mapeo de Controladores (incluye AuthController para /api/auth/register, /api/auth/login)
+// Mapeo de Controladores (AuthController, VehiculosController, MarcasController, ModelosController)
 app.MapControllers();
-
-// In-memory data store for autonomous testing and caching
-var vehiculos = new List<Vehiculo>
-{
-    new() { Id = 1, ModeloId = 1, Marca = "Toyota", Modelo = "Corolla LE", Anio = 2022, Placa = "P123-456", Precio = 18500.00m },
-    new() { Id = 2, ModeloId = 2, Marca = "Nissan", Modelo = "Sentra Advance", Anio = 2023, Placa = "P654-321", Precio = 21000.00m },
-    new() { Id = 3, ModeloId = 3, Marca = "Honda", Modelo = "Civic Touring", Anio = 2024, Placa = "P789-012", Precio = 26500.00m }
-};
-
-var nextId = vehiculos.Max(v => v.Id) + 1;
-var syncLock = new object();
-const string CacheKeyListadoVehiculos = "listado_vehiculos";
-
-app.MapGet("/api/vehiculos", async (IDistributedCache cache) =>
-{
-    try
-    {
-        var cachedData = await cache.GetStringAsync(CacheKeyListadoVehiculos);
-        if (!string.IsNullOrEmpty(cachedData))
-        {
-            var cachedVehiculos = JsonSerializer.Deserialize<List<Vehiculo>>(cachedData);
-            if (cachedVehiculos is not null)
-            {
-                return Results.Ok(cachedVehiculos);
-            }
-        }
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Error al consultar Redis Cache en Vehículos. Se ejecuta fallback a la fuente de datos.");
-    }
-
-    List<Vehiculo> result;
-    lock (syncLock)
-    {
-        result = vehiculos.ToList();
-    }
-
-    try
-    {
-        var cacheOptions = new DistributedCacheEntryOptions
-        {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
-        };
-        var serializedData = JsonSerializer.Serialize(result);
-        await cache.SetStringAsync(CacheKeyListadoVehiculos, serializedData, cacheOptions);
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Error al guardar el inventario de vehículos en Redis Cache.");
-    }
-
-    return Results.Ok(result);
-})
-.WithName("ObtenerVehiculos")
-.WithSummary("Obtiene el inventario completo de vehículos");
-
-app.MapGet("/api/vehiculos/{id:int}", (int id) =>
-{
-    lock (syncLock)
-    {
-        var vehiculo = vehiculos.FirstOrDefault(v => v.Id == id);
-        return vehiculo is not null ? Results.Ok(vehiculo) : Results.NotFound(new { mensaje = $"Vehículo con Id {id} no encontrado" });
-    }
-})
-.WithName("ObtenerVehiculoPorId")
-.WithSummary("Obtiene un vehículo por su identificador");
-
-app.MapPost("/api/vehiculos", async (Vehiculo nuevoVehiculo, IDistributedCache cache) =>
-{
-    lock (syncLock)
-    {
-        nuevoVehiculo.Id = nextId++;
-        vehiculos.Add(nuevoVehiculo);
-    }
-
-    try
-    {
-        await cache.RemoveAsync(CacheKeyListadoVehiculos);
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Error al invalidar Redis Cache tras POST en Vehículos.");
-    }
-
-    return Results.Created($"/api/vehiculos/{nuevoVehiculo.Id}", nuevoVehiculo);
-})
-.WithName("CrearVehiculo")
-.WithSummary("Registra un nuevo vehículo en el inventario");
-
-app.MapPut("/api/vehiculos/{id:int}", async (int id, Vehiculo vehiculoActualizado, IDistributedCache cache) =>
-{
-    lock (syncLock)
-    {
-        var index = vehiculos.FindIndex(v => v.Id == id);
-        if (index == -1)
-        {
-            return Results.NotFound(new { mensaje = $"Vehículo con Id {id} no encontrado para actualización" });
-        }
-
-        vehiculoActualizado.Id = id;
-        vehiculos[index] = vehiculoActualizado;
-    }
-
-    try
-    {
-        await cache.RemoveAsync(CacheKeyListadoVehiculos);
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Error al invalidar Redis Cache tras PUT en Vehículos.");
-    }
-
-    return Results.Ok(vehiculoActualizado);
-})
-.WithName("ActualizarVehiculo")
-.WithSummary("Actualiza los datos de un vehículo existente");
-
-app.MapDelete("/api/vehiculos/{id:int}", async (int id, IDistributedCache cache) =>
-{
-    Vehiculo? eliminado = null;
-    lock (syncLock)
-    {
-        var index = vehiculos.FindIndex(v => v.Id == id);
-        if (index == -1)
-        {
-            return Results.NotFound(new { mensaje = $"Vehículo con Id {id} no encontrado para eliminación" });
-        }
-
-        eliminado = vehiculos[index];
-        vehiculos.RemoveAt(index);
-    }
-
-    try
-    {
-        await cache.RemoveAsync(CacheKeyListadoVehiculos);
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Error al invalidar Redis Cache tras DELETE en Vehículos.");
-    }
-
-    return Results.Ok(eliminado);
-})
-.WithName("EliminarVehiculo")
-.WithSummary("Elimina un vehículo del inventario");
 
 app.Run();
 
