@@ -113,7 +113,8 @@ public class VehiculosController : ControllerBase
 * Capturas de pantalla para el PDF de entrega evidenciando el error 401 sin sesión y el éxito 200 con sesión.
 
 ## 10. Definition of Done (DoD)
-* [ ] Atributo `[Authorize]` colocado a nivel de clase en el controlador de vehículos.
-* [ ] El 100% de los endpoints de vehículos devuelven HTTP 401 sin sesión.
-* [ ] Acceso exitoso con HTTP 200 verificado tras adjuntar token Bearer.
+* [x] Atributo `[Authorize]` colocado a nivel de clase en el controlador de vehículos.
+* [x] El 100% de los endpoints de vehículos devuelven HTTP 401 sin sesión.
+* [x] Acceso exitoso con HTTP 200 verificado tras adjuntar token Bearer.
 * [ ] Captura de pantalla de la respuesta 401 y 200 lista para la rúbrica del informe.
+

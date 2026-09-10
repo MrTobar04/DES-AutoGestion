@@ -1,28 +1,36 @@
-using System.Text.Json;
-using Microsoft.Extensions.Caching.Distributed;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ApiVehiculos.Controllers;
+using ApiVehiculos.Data;
+using ApiVehiculos.Models;
 
 LoadEnvFile();
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configuración de Controladores y Swagger
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "AutoGestion - API Vehículos",
+        Title = "AutoGestion - API Vehículos y Autenticación",
         Version = "v1",
-        Description = "Microservicio de Flotilla e Inventario de Vehículos para pruebas previas al acoplamiento con Gateway Ocelot"
+        Description = "Microservicio de Flotilla de Vehículos y Gestión de Identidad (ASP.NET Core Identity + JWT)"
     });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Ingrese 'Bearer' [espacio] y luego su token JWT en el campo."
+        Description = "Ingrese su token JWT (Swagger antepondrá automáticamente 'Bearer ')."
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -36,6 +44,74 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// Configuración de Entity Framework Core con SQL Server y Resiliencia ante Fallos Transitorios
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
+    ?? "Server=(localdb)\\mssqllocaldb;Database=AutoGestionVehiculosDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
+    options.UseSqlServer(connectionString, sqlOptions =>
+    {
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null
+        );
+    });
+});
+
+// Configuración de ASP.NET Core Identity
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    options.Password.RequireDigit = false;
+    options.Password.RequiredLength = 6;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
+    options.User.RequireUniqueEmail = true;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
+
+// Configuración de Autenticación JWT Bearer
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? Environment.GetEnvironmentVariable("JWT_SECRET_KEY")
+    ?? AuthController.DefaultJwtKey;
+
+var jwtIssuer = builder.Configuration["Jwt:Issuer"]
+    ?? Environment.GetEnvironmentVariable("JWT_ISSUER")
+    ?? AuthController.DefaultIssuer;
+
+var jwtAudience = builder.Configuration["Jwt:Audience"]
+    ?? Environment.GetEnvironmentVariable("JWT_AUDIENCE")
+    ?? AuthController.DefaultAudience;
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = jwtIssuer,
+        ValidateAudience = true,
+        ValidAudience = jwtAudience,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+builder.Services.AddAuthorization();
+
+// Configuración de Redis Cache
 var redisConnectionString = Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")
     ?? builder.Configuration.GetConnectionString("RedisConnection")
     ?? "redis-cache:6379";
@@ -47,6 +123,21 @@ builder.Services.AddStackExchangeRedisCache(options =>
 
 var app = builder.Build();
 
+// Aplicar migraciones automáticamente en inicio de la aplicación
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        context.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Aviso: No se pudo ejecutar context.Database.Migrate() automáticamente en el arranque.");
+    }
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -56,18 +147,38 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// Middleware de seguridad Bearer para aislamiento de Vehículos (SPEC-1.3.1 y SPEC-1.1.2)
+// Middleware de seguridad Bearer para aislamiento de Vehículos (SPEC-1.3.1, SPEC-1.1.2, SPEC-4.2.1)
 app.Use(async (context, next) =>
 {
-    // Permitir acceso libre a Swagger
-    if (context.Request.Path.StartsWithSegments("/swagger"))
+    // Permitir acceso libre a Swagger y Endpoints de Autenticación
+    if (context.Request.Path.StartsWithSegments("/swagger") ||
+        context.Request.Path.StartsWithSegments("/api/auth"))
     {
         await next();
         return;
     }
 
-    var authHeader = context.Request.Headers["Authorization"].ToString();
-    if (string.IsNullOrWhiteSpace(authHeader) || !authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+    var authHeader = context.Request.Headers.Authorization.ToString().Trim();
+    if (string.IsNullOrWhiteSpace(authHeader))
+    {
+        authHeader = context.Request.Headers["Authorization"].ToString().Trim();
+    }
+
+    string token = string.Empty;
+    if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+    {
+        token = authHeader["Bearer ".Length..].Trim();
+    }
+    else if (authHeader.StartsWith("Bearer", StringComparison.OrdinalIgnoreCase))
+    {
+        token = authHeader["Bearer".Length..].Trim();
+    }
+    else if (!string.IsNullOrEmpty(authHeader) && authHeader.Split('.').Length == 3)
+    {
+        token = authHeader;
+    }
+
+    if (string.IsNullOrEmpty(token))
     {
         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
         context.Response.ContentType = "application/json";
@@ -75,163 +186,14 @@ app.Use(async (context, next) =>
         return;
     }
 
-    var token = authHeader["Bearer ".Length..].Trim();
-    if (string.IsNullOrEmpty(token))
-    {
-        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        context.Response.ContentType = "application/json";
-        await context.Response.WriteAsJsonAsync(new { mensaje = "Token Bearer inválido o vacío." });
-        return;
-    }
-
     await next();
 });
 
-// In-memory data store for autonomous testing
-var vehiculos = new List<Vehiculo>
-{
-    new() { Id = 1, Marca = "Toyota", Modelo = "Corolla LE", Anio = 2022, Placa = "P123-456", Precio = 18500.00m },
-    new() { Id = 2, Marca = "Nissan", Modelo = "Sentra Advance", Anio = 2023, Placa = "P654-321", Precio = 21000.00m },
-    new() { Id = 3, Marca = "Honda", Modelo = "Civic Touring", Anio = 2024, Placa = "P789-012", Precio = 26500.00m }
-};
+app.UseAuthentication();
+app.UseAuthorization();
 
-var nextId = vehiculos.Max(v => v.Id) + 1;
-var syncLock = new object();
-const string CacheKeyListadoVehiculos = "listado_vehiculos";
-
-app.MapGet("/api/vehiculos", async (IDistributedCache cache) =>
-{
-    try
-    {
-        var cachedData = await cache.GetStringAsync(CacheKeyListadoVehiculos);
-        if (!string.IsNullOrEmpty(cachedData))
-        {
-            var cachedVehiculos = JsonSerializer.Deserialize<List<Vehiculo>>(cachedData);
-            if (cachedVehiculos is not null)
-            {
-                return Results.Ok(cachedVehiculos);
-            }
-        }
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Error al consultar Redis Cache en Vehículos. Se ejecuta fallback a la fuente de datos.");
-    }
-
-    List<Vehiculo> result;
-    lock (syncLock)
-    {
-        result = vehiculos.ToList();
-    }
-
-    try
-    {
-        var cacheOptions = new DistributedCacheEntryOptions
-        {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
-        };
-        var serializedData = JsonSerializer.Serialize(result);
-        await cache.SetStringAsync(CacheKeyListadoVehiculos, serializedData, cacheOptions);
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Error al guardar el inventario de vehículos en Redis Cache.");
-    }
-
-    return Results.Ok(result);
-})
-.WithName("ObtenerVehiculos")
-.WithSummary("Obtiene el inventario completo de vehículos");
-
-app.MapGet("/api/vehiculos/{id:int}", (int id) =>
-{
-    lock (syncLock)
-    {
-        var vehiculo = vehiculos.FirstOrDefault(v => v.Id == id);
-        return vehiculo is not null ? Results.Ok(vehiculo) : Results.NotFound(new { mensaje = $"Vehículo con Id {id} no encontrado" });
-    }
-})
-.WithName("ObtenerVehiculoPorId")
-.WithSummary("Obtiene un vehículo por su identificador");
-
-app.MapPost("/api/vehiculos", async (Vehiculo nuevoVehiculo, IDistributedCache cache) =>
-{
-    lock (syncLock)
-    {
-        nuevoVehiculo.Id = nextId++;
-        vehiculos.Add(nuevoVehiculo);
-    }
-
-    try
-    {
-        await cache.RemoveAsync(CacheKeyListadoVehiculos);
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Error al invalidar Redis Cache tras POST en Vehículos.");
-    }
-
-    return Results.Created($"/api/vehiculos/{nuevoVehiculo.Id}", nuevoVehiculo);
-})
-.WithName("CrearVehiculo")
-.WithSummary("Registra un nuevo vehículo en el inventario");
-
-app.MapPut("/api/vehiculos/{id:int}", async (int id, Vehiculo vehiculoActualizado, IDistributedCache cache) =>
-{
-    lock (syncLock)
-    {
-        var index = vehiculos.FindIndex(v => v.Id == id);
-        if (index == -1)
-        {
-            return Results.NotFound(new { mensaje = $"Vehículo con Id {id} no encontrado para actualización" });
-        }
-
-        vehiculoActualizado.Id = id;
-        vehiculos[index] = vehiculoActualizado;
-    }
-
-    try
-    {
-        await cache.RemoveAsync(CacheKeyListadoVehiculos);
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Error al invalidar Redis Cache tras PUT en Vehículos.");
-    }
-
-    return Results.Ok(vehiculoActualizado);
-})
-.WithName("ActualizarVehiculo")
-.WithSummary("Actualiza los datos de un vehículo existente");
-
-app.MapDelete("/api/vehiculos/{id:int}", async (int id, IDistributedCache cache) =>
-{
-    Vehiculo? eliminado = null;
-    lock (syncLock)
-    {
-        var index = vehiculos.FindIndex(v => v.Id == id);
-        if (index == -1)
-        {
-            return Results.NotFound(new { mensaje = $"Vehículo con Id {id} no encontrado para eliminación" });
-        }
-
-        eliminado = vehiculos[index];
-        vehiculos.RemoveAt(index);
-    }
-
-    try
-    {
-        await cache.RemoveAsync(CacheKeyListadoVehiculos);
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Error al invalidar Redis Cache tras DELETE en Vehículos.");
-    }
-
-    return Results.Ok(eliminado);
-})
-.WithName("EliminarVehiculo")
-.WithSummary("Elimina un vehículo del inventario");
+// Mapeo de Controladores (AuthController, VehiculosController, MarcasController, ModelosController)
+app.MapControllers();
 
 app.Run();
 
@@ -257,14 +219,4 @@ static void LoadEnvFile()
         }
         current = current.Parent;
     }
-}
-
-public class Vehiculo
-{
-    public int Id { get; set; }
-    public string Marca { get; set; } = string.Empty;
-    public string Modelo { get; set; } = string.Empty;
-    public int Anio { get; set; }
-    public string Placa { get; set; } = string.Empty;
-    public decimal Precio { get; set; }
 }
