@@ -7,6 +7,7 @@ appsettings*.local.json
 # Build results & IDEs
 [Bb]in/
 [Oo]bj/
+[Tt]est[Rr]esults/
 .vs/
 .vscode/
 .idea/
