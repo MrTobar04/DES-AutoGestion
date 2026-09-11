@@ -40,7 +40,7 @@ Orquestar el despliegue simultáneo, la interconexión en red privada virtual y 
                                  │
                         [ api-backend:80 ]
                                  ▲
-                                 │ (Mapeo de Puerto: 8080:80)
+                                 │ (Mapeo de Puerto: 5001:80)
                        [ Cliente / Auditor ]
 ```
 * **Data Model (Archivo `docker-compose.yml` Completo):**
@@ -95,7 +95,7 @@ services:
       - ConnectionStrings__DefaultConnection=Server=sql-server,1433;Database=AutoGestionDb;User Id=sa;Password=SuperP@ssw0rd2026!;TrustServerCertificate=True;
       - ConnectionStrings__RedisConnection=redis-cache:6379
     ports:
-      - "8080:80"
+      - "5001:80"
     depends_on:
       sql-server:
         condition: service_healthy
@@ -115,7 +115,7 @@ volumes:
 * **API Contracts:**
   * Hostname interno para SQL: `sql-server:1433`.
   * Hostname interno para Redis: `redis-cache:6379`.
-  * Puerto externo expuesto para el auditor: `http://localhost:8080`.
+  * Puerto externo expuesto para el auditor: `http://localhost:5001`.
 * **UI/UX:** Visualización del ecosistema en Docker Desktop, mostrando los 3 contenedores agrupados bajo el proyecto `desafio2` con indicador visual de color verde (`Running` / `Healthy`).
 
 ## 5. Acceptance Criteria
@@ -125,7 +125,7 @@ volumes:
   * **Then** Docker crea la red `autogestion-net`, inicializa los contenedores de `sql-server` y `redis-cache`, aguarda sus healthchecks y levanta exitosamente `api-backend`.
 * **Scenario 2: Interconexión y Conectividad con Motores de Datos**
   * **Given** los 3 contenedores corriendo en estado Healthy,
-  * **When** se envía una petición `GET http://localhost:8080/api/productos` a través del puerto expuesto de la API,
+  * **When** se envía una petición `GET http://localhost:5001/api/productos` a través del puerto expuesto de la API,
   * **Then** la API se comunica exitosamente con SQL Server y Redis, devolviendo la respuesta sin arrojar ninguna excepción de `SocketException` o fallo de conexión.
 * **Scenario 3: Resiliencia ante Caída de Contenedor Secundario**
   * **Given** el servicio Redis detenido momentáneamente con `docker stop autogestion-redis`,
@@ -135,7 +135,7 @@ volumes:
 ## 6. Verification Plan
 * Ejecución de `docker compose ps` comprobando que los 3 servicios figuren con estado `Up (healthy)`.
 * Inspección de logs con `docker compose logs api-backend` verificando la aplicación de migraciones y conexión exitosa.
-* Prueba de invocación de endpoints mediante cURL o Postman a `http://localhost:8080`.
+* Prueba de invocación de endpoints mediante cURL o Postman a `http://localhost:5001`.
 
 ## 7. Security and Privacy
 * Red virtual privada: el tráfico entre la API, SQL y Redis transcurre encapsulado en la red bridge de Docker.

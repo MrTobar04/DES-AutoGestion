@@ -8,7 +8,7 @@ Diseñar y estandarizar el proceso de empaquetado de las aplicaciones de AutoGes
 * Creación de `Dockerfile` estandarizado para las APIs basadas en .NET 10.
 * Separación formal de fases: `base`, `build`, `publish` y `final`.
 * Optimización de caché de capas de Docker mediante la copia selectiva inicial de archivos de proyecto (`*.csproj`) y ejecución de `dotnet restore`.
-* Configuración del usuario no root por defecto y puertos de escucha expuestos (`EXPOSE 80` o `EXPOSE 8080`).
+* Configuración del usuario no root por defecto y puertos de escucha expuestos (`EXPOSE 80` o `EXPOSE 5001`).
 
 ### 2.2. Not Included (Out of Scope)
 * Orquestación de múltiples contenedores y redes (delegado a [SPEC-5.2.1](file:///d:/UDB/CICLO-10-2026/DES/LAB/Desafio2/specs/SPEC-5.2.1-docker-compose-orquestacion-api-sql-redis.md)).
@@ -82,7 +82,7 @@ ENTRYPOINT ["dotnet", "AutoGestion.Api.dll"]
 ## 6. Verification Plan
 * Ejecución de `docker build` en la consola local.
 * Inspección de tamaño con `docker images`.
-* Ejecución de contenedor independiente `docker run -p 8080:80 autogestion-api:v1` verificando que responda a peticiones HTTP.
+* Ejecución de contenedor independiente `docker run -p 5001:80 autogestion-api:v1` verificando que responda a peticiones HTTP.
 
 ## 7. Security and Privacy
 * Cero inclusión de credenciales locales o archivos temporales gracias a `.dockerignore`.
@@ -99,4 +99,4 @@ ENTRYPOINT ["dotnet", "AutoGestion.Api.dll"]
 * [x] Archivo `Dockerfile` implementado con patrón Multi-Stage Build.
 * [x] Archivo `.dockerignore` configurado en la raíz.
 * [x] Imagen compilando limpiamente sin errores.
-* [x] Contenedor ejecutándose y respondiendo sobre puerto HTTP 80/8080.
+* [x] Contenedor ejecutándose y respondiendo sobre puerto HTTP 80/5001.
