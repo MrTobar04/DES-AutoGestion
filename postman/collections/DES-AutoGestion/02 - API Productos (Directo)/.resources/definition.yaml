@@ -1,4 +1,4 @@
 $kind: collection
 name: '02 - API Productos (Directo)'
-description: 'Acceso directo a la API de Productos en el puerto 8080. CRUD completo con caché Redis (TTL 5 min). Las mutaciones (POST/PUT/DELETE) invalidan el caché automáticamente.'
+description: 'Acceso directo a la API de Productos en el puerto 5001. CRUD completo con caché Redis (TTL 5 min). Las mutaciones (POST/PUT/DELETE) invalidan el caché automáticamente.'
 order: 2000

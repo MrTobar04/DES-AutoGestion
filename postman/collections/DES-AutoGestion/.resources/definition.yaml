@@ -5,9 +5,9 @@ description: |-
 
   Servicios incluidos:
   - **API Gateway** (puerto 5000): Enrutamiento Ocelot con rate limiting (10 req/min)
-  - **API Productos** (puerto 8080): Catálogo de productos con caché Redis
-  - **API Libros** (puerto 8081): Catálogo de libros y manuales técnicos con caché Redis
-  - **API Vehículos** (puerto 8082): Flotilla de vehículos con Identity + JWT
+  - **API Productos** (puerto 5001): Catálogo de productos con caché Redis
+  - **API Libros** (puerto 5002): Catálogo de libros y manuales técnicos con caché Redis
+  - **API Vehículos** (puerto 5003): Flotilla de vehículos con Identity + JWT
 
   Autenticación: Bearer JWT (obtenido desde POST /api/auth/login en API Vehículos)
 variables:
@@ -15,13 +15,13 @@ variables:
     value: 'http://localhost:5000'
     description: 'URL base del API Gateway Ocelot'
   - key: productos_url
-    value: 'http://localhost:8080'
+    value: 'http://localhost:5001'
     description: 'URL directa de API Productos'
   - key: libros_url
-    value: 'http://localhost:8081'
+    value: 'http://localhost:5002'
     description: 'URL directa de API Libros'
   - key: vehiculos_url
-    value: 'http://localhost:8082'
+    value: 'http://localhost:5003'
     description: 'URL directa de API Vehículos'
   - key: jwt_token
     value: ''
