@@ -1,4 +1,4 @@
 $kind: collection
 name: '03 - API Libros (Directo)'
-description: 'Acceso directo a la API de Libros y Manuales Técnicos en el puerto 8081. CRUD completo con caché Redis (TTL 5 min).'
+description: 'Acceso directo a la API de Libros y Manuales Técnicos en el puerto 5002. CRUD completo con caché Redis (TTL 5 min).'
 order: 3000
