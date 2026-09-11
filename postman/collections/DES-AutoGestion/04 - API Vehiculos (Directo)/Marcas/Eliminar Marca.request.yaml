@@ -3,6 +3,9 @@ name: 'Eliminar Marca'
 method: DELETE
 url: '{{vehiculos_url}}/api/marcas/:id'
 order: 5000
+headers:
+  - key: Authorization
+    value: 'Bearer {{jwt_token}}'
 pathVariables:
   - key: id
     value: '1'
