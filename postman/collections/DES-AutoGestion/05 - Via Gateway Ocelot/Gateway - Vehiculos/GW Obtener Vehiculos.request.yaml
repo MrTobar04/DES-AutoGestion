@@ -3,3 +3,6 @@ name: 'GW Obtener Vehículos'
 method: GET
 url: '{{gateway_url}}/vehiculos'
 order: 1000
+headers:
+  - key: Authorization
+    value: 'Bearer {{jwt_token}}'

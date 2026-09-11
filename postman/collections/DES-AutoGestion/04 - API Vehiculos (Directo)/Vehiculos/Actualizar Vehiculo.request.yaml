@@ -7,6 +7,8 @@ pathVariables:
   - key: id
     value: '1'
 headers:
+  - key: Authorization
+    value: 'Bearer {{jwt_token}}'
   - key: Content-Type
     value: application/json
 body:
@@ -18,5 +20,5 @@ body:
       "modelo": "Corolla",
       "anio": 2024,
       "precio": 23500.00,
-      "placa": "P-123456"
+      "placa": "P123-456"
     }
