@@ -11,7 +11,7 @@ body:
   content: |-
     {
       "nombre": "Juan Pérez",
-      "dui": "12345678-9",
-      "email": "juan.perez@example.com",
-      "password": "password123"
+      "dui": "01234567-9",
+      "email": "juan.perez@ejemplo.com",
+      "password": "Password123!"
     }
