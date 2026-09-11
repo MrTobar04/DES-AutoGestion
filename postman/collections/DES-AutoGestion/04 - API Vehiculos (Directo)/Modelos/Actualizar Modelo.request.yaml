@@ -7,6 +7,8 @@ pathVariables:
   - key: id
     value: '1'
 headers:
+  - key: Authorization
+    value: 'Bearer {{jwt_token}}'
   - key: Content-Type
     value: application/json
 body:

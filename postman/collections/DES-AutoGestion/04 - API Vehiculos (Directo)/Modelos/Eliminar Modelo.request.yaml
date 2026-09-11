@@ -3,6 +3,9 @@ name: 'Eliminar Modelo'
 method: DELETE
 url: '{{vehiculos_url}}/api/modelos/:id'
 order: 5000
+headers:
+  - key: Authorization
+    value: 'Bearer {{jwt_token}}'
 pathVariables:
   - key: id
     value: '1'

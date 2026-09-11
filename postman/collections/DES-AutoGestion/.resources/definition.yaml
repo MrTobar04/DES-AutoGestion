@@ -1,5 +1,4 @@
 $kind: collection
-name: 'DES-AutoGestion'
 description: |-
   Colección para el proyecto DES-AutoGestion — arquitectura de microservicios con API Gateway Ocelot.
 
@@ -11,18 +10,8 @@ description: |-
 
   Autenticación: Bearer JWT (obtenido desde POST /api/auth/login en API Vehículos)
 variables:
-  - key: gateway_url
-    value: 'http://localhost:5000'
-    description: 'URL base del API Gateway Ocelot'
-  - key: productos_url
-    value: 'http://localhost:5001'
-    description: 'URL directa de API Productos'
-  - key: libros_url
-    value: 'http://localhost:5002'
-    description: 'URL directa de API Libros'
-  - key: vehiculos_url
-    value: 'http://localhost:5003'
-    description: 'URL directa de API Vehículos'
-  - key: jwt_token
-    value: ''
-    description: 'Token JWT obtenido tras el login. Se actualiza automáticamente.'
+  gateway_url: http://localhost:5000
+  productos_url: http://localhost:5001
+  libros_url: http://localhost:5002
+  vehiculos_url: http://localhost:5003
+  jwt_token: ""

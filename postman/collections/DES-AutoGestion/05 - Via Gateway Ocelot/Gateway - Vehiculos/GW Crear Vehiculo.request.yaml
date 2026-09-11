@@ -4,6 +4,8 @@ method: POST
 url: '{{gateway_url}}/vehiculos'
 order: 2000
 headers:
+  - key: Authorization
+    value: 'Bearer {{jwt_token}}'
   - key: Content-Type
     value: application/json
 body:
@@ -15,5 +17,5 @@ body:
       "modelo": "Corolla",
       "anio": 2023,
       "precio": 22000.00,
-      "placa": "P-123456"
+      "placa": "P123-456"
     }

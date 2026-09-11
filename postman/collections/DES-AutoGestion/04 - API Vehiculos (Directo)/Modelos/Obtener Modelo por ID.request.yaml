@@ -3,6 +3,9 @@ name: 'Obtener Modelo por ID'
 method: GET
 url: '{{vehiculos_url}}/api/modelos/:id'
 order: 2000
+headers:
+  - key: Authorization
+    value: 'Bearer {{jwt_token}}'
 pathVariables:
   - key: id
     value: '1'

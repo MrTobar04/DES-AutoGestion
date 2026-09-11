@@ -3,3 +3,6 @@ name: 'Obtener Todos los Vehículos'
 method: GET
 url: '{{vehiculos_url}}/api/vehiculos'
 order: 1000
+headers:
+  - key: Authorization
+    value: 'Bearer {{jwt_token}}'

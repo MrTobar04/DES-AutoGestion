@@ -4,6 +4,8 @@ method: POST
 url: '{{vehiculos_url}}/api/marcas'
 order: 3000
 headers:
+  - key: Authorization
+    value: 'Bearer {{jwt_token}}'
   - key: Content-Type
     value: application/json
 body:
