@@ -154,19 +154,22 @@ namespace AutoGestion.Tests.UnitTests
             var registerRoute = routes.FirstOrDefault(r => r.GetProperty("UpstreamPathTemplate").GetString() == "/register");
             Assert.True(registerRoute.ValueKind != JsonValueKind.Undefined, "La ruta Upstream /register no está configurada en ocelot.json.");
             Assert.Equal("/api/auth/register", registerRoute.GetProperty("DownstreamPathTemplate").GetString());
-            Assert.Equal(5003, registerRoute.GetProperty("DownstreamHostAndPorts")[0].GetProperty("Port").GetInt32());
+            var registerPort = registerRoute.GetProperty("DownstreamHostAndPorts")[0].GetProperty("Port").GetInt32();
+            Assert.True(registerPort is 80 or 5003, $"El puerto downstream para /register debe ser 80 (Docker) o 5003 (Local), pero fue {registerPort}");
 
             // Act & Assert - Verificar ruta /login
             var loginRoute = routes.FirstOrDefault(r => r.GetProperty("UpstreamPathTemplate").GetString() == "/login");
             Assert.True(loginRoute.ValueKind != JsonValueKind.Undefined, "La ruta Upstream /login no está configurada en ocelot.json.");
             Assert.Equal("/api/auth/login", loginRoute.GetProperty("DownstreamPathTemplate").GetString());
-            Assert.Equal(5003, loginRoute.GetProperty("DownstreamHostAndPorts")[0].GetProperty("Port").GetInt32());
+            var loginPort = loginRoute.GetProperty("DownstreamHostAndPorts")[0].GetProperty("Port").GetInt32();
+            Assert.True(loginPort is 80 or 5003, $"El puerto downstream para /login debe ser 80 (Docker) o 5003 (Local), pero fue {loginPort}");
 
             // Act & Assert - Verificar ruta /vehiculos
             var vehiculosRoute = routes.FirstOrDefault(r => r.GetProperty("UpstreamPathTemplate").GetString() == "/vehiculos");
             Assert.True(vehiculosRoute.ValueKind != JsonValueKind.Undefined, "La ruta Upstream /vehiculos no está configurada en ocelot.json.");
             Assert.Equal("/api/vehiculos", vehiculosRoute.GetProperty("DownstreamPathTemplate").GetString());
-            Assert.Equal(5003, vehiculosRoute.GetProperty("DownstreamHostAndPorts")[0].GetProperty("Port").GetInt32());
+            var vehiculosPort = vehiculosRoute.GetProperty("DownstreamHostAndPorts")[0].GetProperty("Port").GetInt32();
+            Assert.True(vehiculosPort is 80 or 5003, $"El puerto downstream para /vehiculos debe ser 80 (Docker) o 5003 (Local), pero fue {vehiculosPort}");
         }
 
         [Fact]
