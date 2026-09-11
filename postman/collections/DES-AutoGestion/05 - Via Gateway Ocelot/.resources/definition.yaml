@@ -1,0 +1,7 @@
+$kind: collection
+name: '05 - Vía Gateway Ocelot'
+description: |-
+  Peticiones enrutadas a través del API Gateway Ocelot (puerto 5000).
+  Rate limiting activo: máximo 10 peticiones por minuto por servicio.
+  Las rutas de autenticación (/register, /login) también pasan por el gateway.
+order: 5000

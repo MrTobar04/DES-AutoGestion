@@ -1,0 +1,17 @@
+$kind: http-request
+name: 'Crear Libro'
+method: POST
+url: '{{libros_url}}/api/libros'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "titulo": "Electrónica Automotriz Moderna",
+      "autor": "Luis Ramírez",
+      "isbn": "978-0000000001",
+      "anioPublicacion": 2025
+    }

@@ -1,0 +1,14 @@
+$kind: http-request
+name: 'Crear Marca'
+method: POST
+url: '{{vehiculos_url}}/api/marcas'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "nombre": "Toyota"
+    }

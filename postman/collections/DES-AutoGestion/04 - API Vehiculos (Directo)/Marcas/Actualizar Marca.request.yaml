@@ -1,0 +1,17 @@
+$kind: http-request
+name: 'Actualizar Marca'
+method: PUT
+url: '{{vehiculos_url}}/api/marcas/:id'
+order: 4000
+pathVariables:
+  - key: id
+    value: '1'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "nombre": "Toyota Motors"
+    }

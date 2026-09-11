@@ -1,0 +1,4 @@
+$kind: collection
+name: 'Modelos'
+description: 'CRUD de modelos de vehículos. Cada modelo pertenece a una Marca.'
+order: 3000

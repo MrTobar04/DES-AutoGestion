@@ -1,0 +1,8 @@
+$kind: http-request
+name: 'Eliminar Marca'
+method: DELETE
+url: '{{vehiculos_url}}/api/marcas/:id'
+order: 5000
+pathVariables:
+  - key: id
+    value: '1'

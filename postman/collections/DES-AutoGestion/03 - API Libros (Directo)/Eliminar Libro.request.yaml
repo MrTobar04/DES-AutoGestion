@@ -1,0 +1,8 @@
+$kind: http-request
+name: 'Eliminar Libro'
+method: DELETE
+url: '{{libros_url}}/api/libros/:id'
+order: 5000
+pathVariables:
+  - key: id
+    value: '1'

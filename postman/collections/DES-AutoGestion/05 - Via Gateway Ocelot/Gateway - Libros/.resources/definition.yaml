@@ -1,0 +1,4 @@
+$kind: collection
+name: 'Gateway - Libros'
+description: 'Rutas de Libros enrutadas por Ocelot: /libros → api-libros:80/api/libros'
+order: 2000

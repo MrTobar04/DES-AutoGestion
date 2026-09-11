@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'Obtener Todos los Libros'
+method: GET
+url: '{{libros_url}}/api/libros'
+order: 1000

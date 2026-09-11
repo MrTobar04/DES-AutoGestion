@@ -1,0 +1,9 @@
+# Use this workspace to collaborate
+workspace:
+  id: 8eb87546-8f36-45bc-8d41-63d47328cf16
+
+localResources:
+  specs:
+    - ../AutoGestion/src/ApiLibros/obj/Debug/net10.0/EndpointInfo/ApiLibros.json
+    - ../AutoGestion/src/ApiProductos/obj/Debug/net10.0/EndpointInfo/ApiProductos.json
+    - ../AutoGestion/src/ApiVehiculos/obj/Debug/net10.0/EndpointInfo/ApiVehiculos.json

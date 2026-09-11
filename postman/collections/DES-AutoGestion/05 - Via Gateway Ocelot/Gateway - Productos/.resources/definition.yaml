@@ -1,0 +1,4 @@
+$kind: collection
+name: 'Gateway - Productos'
+description: 'Rutas de Productos enrutadas por Ocelot: /productos → api-productos:80/api/productos'
+order: 1000

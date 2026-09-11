@@ -1,0 +1,24 @@
+$kind: http-request
+name: 'Login'
+method: POST
+url: '{{vehiculos_url}}/api/auth/login'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "juan.perez@example.com",
+      "password": "password123"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const response = pm.response.json();
+      if (response.token) {
+          pm.collectionVariables.set("jwt_token", response.token);
+          console.log("JWT token guardado en variable de colección: jwt_token");
+      }

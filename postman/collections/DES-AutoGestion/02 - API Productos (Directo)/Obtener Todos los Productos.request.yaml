@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'Obtener Todos los Productos'
+method: GET
+url: '{{productos_url}}/api/productos'
+order: 1000

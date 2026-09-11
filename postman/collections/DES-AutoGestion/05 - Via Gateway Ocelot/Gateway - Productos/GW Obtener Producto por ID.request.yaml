@@ -1,0 +1,8 @@
+$kind: http-request
+name: 'GW Obtener Producto por ID'
+method: GET
+url: '{{gateway_url}}/productos/:id'
+order: 2000
+pathVariables:
+  - key: id
+    value: '1'

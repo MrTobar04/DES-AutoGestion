@@ -1,0 +1,20 @@
+$kind: http-request
+name: 'Actualizar Producto'
+method: PUT
+url: '{{productos_url}}/api/productos/:id'
+order: 4000
+pathVariables:
+  - key: id
+    value: '1'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "nombre": "Filtro de Aceite Sintético Premium",
+      "precio": 18.99,
+      "stock": 45,
+      "categoria": "Mantenimiento"
+    }

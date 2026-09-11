@@ -1,0 +1,19 @@
+$kind: http-request
+name: 'GW Crear Vehículo'
+method: POST
+url: '{{gateway_url}}/vehiculos'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "modeloId": 1,
+      "marca": "Toyota",
+      "modelo": "Corolla",
+      "anio": 2023,
+      "precio": 22000.00,
+      "placa": "P-123456"
+    }

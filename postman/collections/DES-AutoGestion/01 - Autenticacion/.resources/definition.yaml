@@ -1,0 +1,4 @@
+$kind: collection
+name: '01 - Autenticación'
+description: 'Registro e inicio de sesión con ASP.NET Core Identity. El login devuelve un JWT Bearer que se guarda automáticamente en la variable {{jwt_token}}.'
+order: 1000

@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'GW Obtener Libros'
+method: GET
+url: '{{gateway_url}}/libros'
+order: 1000

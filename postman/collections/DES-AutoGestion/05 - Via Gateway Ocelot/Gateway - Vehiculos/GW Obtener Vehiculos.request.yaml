@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'GW Obtener Vehículos'
+method: GET
+url: '{{gateway_url}}/vehiculos'
+order: 1000

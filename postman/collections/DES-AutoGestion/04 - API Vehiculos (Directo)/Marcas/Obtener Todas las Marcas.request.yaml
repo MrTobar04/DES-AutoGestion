@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'Obtener Todas las Marcas'
+method: GET
+url: '{{vehiculos_url}}/api/marcas'
+order: 1000

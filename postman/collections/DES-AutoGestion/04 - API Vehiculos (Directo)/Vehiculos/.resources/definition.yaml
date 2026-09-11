@@ -1,0 +1,4 @@
+$kind: collection
+name: 'Vehículos'
+description: 'CRUD de vehículos de la flotilla. Requiere JWT Bearer. Usa caché Redis con TTL de 5 minutos.'
+order: 1000

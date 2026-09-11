@@ -1,0 +1,12 @@
+$kind: collection
+name: '04 - API Vehículos (Directo)'
+description: |-
+  Acceso directo a la API de Vehículos en el puerto 8082.
+  Requiere autenticación JWT Bearer en todas las rutas excepto /api/auth/*.
+  Incluye sub-recursos: Marcas y Modelos.
+order: 4000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{jwt_token}}'

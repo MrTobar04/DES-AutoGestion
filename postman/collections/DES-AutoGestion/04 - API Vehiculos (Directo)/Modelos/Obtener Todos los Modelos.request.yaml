@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'Obtener Todos los Modelos'
+method: GET
+url: '{{vehiculos_url}}/api/modelos'
+order: 1000

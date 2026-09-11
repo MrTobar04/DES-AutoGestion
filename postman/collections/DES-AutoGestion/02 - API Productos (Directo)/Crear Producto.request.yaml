@@ -1,0 +1,17 @@
+$kind: http-request
+name: 'Crear Producto'
+method: POST
+url: '{{productos_url}}/api/productos'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "nombre": "Aceite de Motor 5W-30",
+      "precio": 22.50,
+      "stock": 100,
+      "categoria": "Mantenimiento"
+    }

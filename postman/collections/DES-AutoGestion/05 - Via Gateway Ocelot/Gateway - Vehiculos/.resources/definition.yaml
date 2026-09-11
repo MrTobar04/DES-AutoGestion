@@ -1,0 +1,9 @@
+$kind: collection
+name: 'Gateway - Vehículos'
+description: 'Rutas de Vehículos enrutadas por Ocelot: /vehiculos → api-vehiculos:80/api/vehiculos. Requiere JWT Bearer.'
+order: 3000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{jwt_token}}'

@@ -1,0 +1,8 @@
+$kind: http-request
+name: 'Obtener Producto por ID'
+method: GET
+url: '{{productos_url}}/api/productos/:id'
+order: 2000
+pathVariables:
+  - key: id
+    value: '1'

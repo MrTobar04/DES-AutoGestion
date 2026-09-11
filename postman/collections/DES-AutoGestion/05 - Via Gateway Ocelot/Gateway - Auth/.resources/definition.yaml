@@ -1,0 +1,4 @@
+$kind: collection
+name: 'Gateway - Auth'
+description: 'Rutas de autenticación enrutadas por Ocelot: /register y /login → api-vehiculos:80/api/auth/*'
+order: 4000

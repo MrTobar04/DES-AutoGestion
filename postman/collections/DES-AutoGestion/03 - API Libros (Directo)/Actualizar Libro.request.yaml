@@ -1,0 +1,20 @@
+$kind: http-request
+name: 'Actualizar Libro'
+method: PUT
+url: '{{libros_url}}/api/libros/:id'
+order: 4000
+pathVariables:
+  - key: id
+    value: '1'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "titulo": "Manual de Taller y Mecánica Automotriz (2da Ed.)",
+      "autor": "Alonso Pérez",
+      "isbn": "978-0123456789",
+      "anioPublicacion": 2025
+    }

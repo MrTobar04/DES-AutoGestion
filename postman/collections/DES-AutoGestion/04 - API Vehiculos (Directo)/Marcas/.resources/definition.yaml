@@ -1,0 +1,4 @@
+$kind: collection
+name: 'Marcas'
+description: 'CRUD de marcas de vehículos. Incluye modelos relacionados en las respuestas.'
+order: 2000

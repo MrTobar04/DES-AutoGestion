@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'GW Obtener Productos'
+method: GET
+url: '{{gateway_url}}/productos'
+order: 1000
