@@ -2,7 +2,7 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview AS base
 WORKDIR /app
 EXPOSE 80
-EXPOSE 8082
+EXPOSE 5003
 
 # Etapa 2: Compilación y Restauración
 FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
